@@ -4,9 +4,11 @@ import {
 	type PhotographyCollection
 } from '../../content/photography';
 import { photographFileName } from '../photography';
+import { commandCatalog } from './help';
 import type { BlogPostMeta } from './types';
 
 export const ROOT_DIRECTORY = '/';
+export const BIN_DIRECTORY = '/bin';
 export const HOME_DIRECTORY = '/home/sherlock';
 
 export type FileSystem = {
@@ -17,7 +19,8 @@ export type FileSystem = {
 
 export type VirtualFile =
 	| { kind: 'post'; post: BlogPostMeta }
-	| { kind: 'photograph'; collection: PhotographyCollection; photograph: Photograph };
+	| { kind: 'photograph'; collection: PhotographyCollection; photograph: Photograph }
+	| { kind: 'executable'; command: string };
 
 export type FsEntry = {
 	name: string;
@@ -27,7 +30,14 @@ export type FsEntry = {
 
 export function createFileSystem(posts: BlogPostMeta[]): FileSystem {
 	const files = new Map<string, VirtualFile>();
-	const directories = new Set<string>([ROOT_DIRECTORY, '/home', HOME_DIRECTORY]);
+	const directories = new Set<string>([ROOT_DIRECTORY, BIN_DIRECTORY, '/home', HOME_DIRECTORY]);
+
+	for (const command of [
+		...commandCatalog.filter(({ executable }) => executable).map(({ name }) => name),
+		'sh'
+	]) {
+		files.set(`${BIN_DIRECTORY}/${command}`, { kind: 'executable', command });
+	}
 
 	for (const post of posts) {
 		const filePath = filePathFromPostPath(post.path);

@@ -627,6 +627,10 @@
 			void openPhotographyPhotograph(entry.collection, entry.photograph);
 			return;
 		}
+		if (entry.kind === 'executable') {
+			print([`${commandName}: ${target}: Cannot render executable file`], 'error');
+			return;
+		}
 
 		activePostPath = entry.post.path;
 		blogBrowserVisible = false;
