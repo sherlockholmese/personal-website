@@ -2,17 +2,9 @@
 @plugin '@tailwindcss/typography';
 
 @layer base {
-	@font-face {
-		font-family: 'Ioskeley Mono';
-		src: url('/fonts/ioskeley-mono-regular.woff2') format('woff2');
-		font-weight: 400;
-		font-style: normal;
-		font-display: swap;
-	}
-
 	:root {
 		font-family:
-			'Ioskeley Mono', ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+			'Geist Mono', ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
 		font-size: 16px;
 		color: #cecdc3;
 		background: #100f0f;
@@ -23,7 +15,7 @@
 	* {
 		box-sizing: border-box;
 		font-family:
-			'Ioskeley Mono', ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace !important;
+			'Geist Mono', ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', monospace !important;
 	}
 
 	html,

@@ -1,22 +1,16 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import './layout.css';
 
 	let { children } = $props();
-
-	onMount(() => {
-		void import('./font-variants.css');
-	});
 </script>
 
 <svelte:head>
 	<link rel="icon" href="/icon.svg" />
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 	<link
-		rel="preload"
-		href="/fonts/ioskeley-mono-regular.woff2"
-		as="font"
-		type="font/woff2"
-		crossorigin="anonymous"
+		rel="stylesheet"
+		href="https://fonts.googleapis.com/css2?family=Geist+Mono:ital,wght@0,100..900;1,100..900&display=swap"
 	/>
 </svelte:head>
 {@render children()}

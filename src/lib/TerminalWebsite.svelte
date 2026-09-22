@@ -491,7 +491,7 @@
 				print([
 					'Sherlock Holmes',
 					'  site: personal blog in a terminal shell',
-					'  stack: SvelteKit, TypeScript, Flexoki, Ioskeley Mono',
+					'  stack: SvelteKit, TypeScript, Flexoki, Geist Mono',
 					'  focus: Rust, CTF notes, web development, and MUN'
 				]);
 				return;
