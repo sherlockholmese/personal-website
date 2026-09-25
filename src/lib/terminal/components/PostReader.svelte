@@ -247,7 +247,8 @@
 
 	<nav
 		id="mobile-post-toc"
-		class={`post-toc ${mobileTocOpen ? 'max-[760px]:absolute max-[760px]:top-[51px] max-[760px]:right-[9px] max-[760px]:left-[9px] max-[760px]:z-[6] max-[760px]:block max-[760px]:h-auto max-[760px]:max-h-[50vh] max-[760px]:w-auto max-[760px]:translate-y-0 max-[760px]:bg-[var(--bg)] max-[760px]:shadow-[0_12px_24px_rgba(0,0,0,0.4)]' : ''}`}
+		class:post-toc-open={mobileTocOpen}
+		class="post-toc"
 		aria-label="table of contents"
 	>
 		<span class="post-toc-heading">contents</span>
