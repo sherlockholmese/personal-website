@@ -3,9 +3,13 @@
 	import { helpfulCommands } from '../help';
 	import { formatPostDate } from '../date';
 	import type { BlogPostMeta } from '../types';
+	import DitherAscii from './DitherAscii.svelte';
 
-	let { posts, onCommand }: { posts: BlogPostMeta[]; onCommand: (command: string) => void } =
-		$props();
+	let {
+		posts,
+		asciiSeed,
+		onCommand
+	}: { posts: BlogPostMeta[]; asciiSeed: number; onCommand: (command: string) => void } = $props();
 </script>
 
 <div class="welcome-banner">
@@ -15,18 +19,8 @@
 	</div>
 
 	<div class="welcome-content">
-		<pre
-			class="welcome-ascii"
-			aria-hidden="true">{`███████╗██╗  ██╗███████╗██████╗ ██╗      ██████╗  ██████╗██╗  ██╗
-██╔════╝██║  ██║██╔════╝██╔══██╗██║     ██╔═══██╗██╔════╝██║ ██╔╝
-███████╗███████║█████╗  ██████╔╝██║     ██║   ██║██║     █████╔╝
-╚════██║██╔══██║██╔══╝  ██╔══██╗██║     ██║   ██║██║     ██╔═██╗
-███████║██║  ██║███████╗██║  ██║███████╗╚██████╔╝╚██████╗██║  ██╗
-╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝`}</pre>
-		<pre class="welcome-ascii-mobile" aria-hidden="true">{`_____ _           _         _   
-|   __| |_ ___ ___| |___ ___| |_ 
-|__   |   | -_|  _| | . |  _| '_|
-|_____|_|_|___|_| |_|___|___|_,_|`}</pre>
+		<DitherAscii seed={asciiSeed} />
+		<DitherAscii compact seed={asciiSeed} />
 
 		<div class="welcome-summary" aria-label="site summary">
 			<div class="welcome-summary-row">
@@ -40,10 +34,6 @@
 				<strong class="welcome-summary-value"
 					>C/C++, Rust, HTML + JavaScript/TypeScript + CSS, Python, Godot Engine</strong
 				>
-			</div>
-			<div class="welcome-summary-row">
-				<span class="welcome-label">start</span>
-				<strong class="welcome-summary-value">Type a command to get started!</strong>
 			</div>
 		</div>
 

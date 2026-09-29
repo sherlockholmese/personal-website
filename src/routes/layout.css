@@ -1041,19 +1041,30 @@
 	}
 
 	.welcome-ascii {
-		@apply mb-[10px] text-[12px] leading-[1.1] whitespace-pre text-[var(--cyan)];
+		@apply mb-[10px] cursor-default text-[7px] leading-[1.08] whitespace-pre text-[var(--cyan)] select-none;
+		mask-image: radial-gradient(
+			circle at left bottom,
+			#000 max(0%, calc(var(--ascii-radius) - 8%)),
+			transparent var(--ascii-radius)
+		);
 	}
 
-	.welcome-ascii-mobile {
-		@apply hidden text-[clamp(13px,3.8vw,16px)] leading-[1.05] whitespace-pre text-[var(--cyan)];
+	@media (prefers-reduced-motion: reduce) {
+		.welcome-ascii {
+			mask-image: none;
+		}
+	}
+
+	.welcome-ascii.compact {
+		@apply hidden text-[4.5px] leading-[1.08];
 	}
 
 	@media (max-width: 760px) {
-		.welcome-ascii {
+		.welcome-ascii:not(.compact) {
 			display: none;
 		}
 
-		.welcome-ascii-mobile {
+		.welcome-ascii.compact {
 			display: block;
 		}
 	}

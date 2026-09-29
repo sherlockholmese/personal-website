@@ -59,6 +59,7 @@
 		data: {
 			posts: BlogPostMeta[];
 			about: BlogPost;
+			asciiSeed: number;
 			post?: BlogPost;
 			photography?: PhotographyRouteState;
 			requestedPath?: string;
@@ -66,6 +67,7 @@
 		};
 	} = $props();
 	let posts = $derived(data.posts);
+	let asciiSeed = $derived(data.asciiSeed);
 	let aboutPost = $derived(data.about);
 	let loadedPost = $derived(data.post);
 	let routePhotography = $derived(data.photography);
@@ -849,9 +851,16 @@
 
 	async function scrollToPrompt() {
 		await tick();
-		const scrollTarget = shouldAvoidImplicitFocus() ? terminalScrollback : terminalViewport;
-		if (!scrollTarget) return;
-		scrollTarget.scrollTop = scrollTarget.scrollHeight;
+		if (shouldAvoidImplicitFocus()) {
+			if (terminalScrollback) terminalScrollback.scrollTop = terminalScrollback.scrollHeight;
+			return;
+		}
+		if (!terminalViewport || !promptInput) return;
+		const promptBottom = promptInput.closest('form')?.getBoundingClientRect().bottom;
+		const viewportBottom = terminalViewport.getBoundingClientRect().bottom - 8;
+		if (promptBottom && promptBottom > viewportBottom) {
+			terminalViewport.scrollTop += promptBottom - viewportBottom;
+		}
 	}
 
 	async function updateUrlForView(path?: string) {
@@ -954,7 +963,7 @@
 					<div bind:this={terminalScrollback} class="terminal-scrollback">
 						{#each history as line, index (index)}
 							{#if line.kind === 'prompt'}
-								<div class="mb-[14px]">
+								<div>
 									<div class="leading-[1.45] text-[var(--tx)]">
 										<span
 											class="text-[var(--cyan)] max-[760px]:text-[0px] max-[760px]:after:text-[16px] max-[760px]:after:content-['~']"
@@ -974,7 +983,7 @@
 							{:else if line.kind === 'projects'}
 								<ProjectsTable />
 							{:else if line.kind === 'banner'}
-								<WelcomeBanner {posts} onCommand={runShortcut} />
+								<WelcomeBanner {posts} {asciiSeed} onCommand={runShortcut} />
 							{:else if line.kind === 'help'}
 								<HelpPanel />
 							{:else if line.kind === 'not-found'}

@@ -25,7 +25,7 @@
 </script>
 
 <form
-	class="mt-[14px] flex flex-col border-0 bg-[var(--bg)] p-0 text-[15px] max-[760px]:mt-0 max-[760px]:text-[16px]"
+	class="flex flex-col border-0 bg-[var(--bg)] p-0 text-[15px] max-[760px]:text-[16px]"
 	onsubmit={(event) => (event.preventDefault(), onSubmit())}
 >
 	<div class="leading-[1.45] text-[var(--tx)]">
