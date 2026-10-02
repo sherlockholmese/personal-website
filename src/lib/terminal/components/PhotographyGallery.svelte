@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { findPhotograph, photographRouteSlug } from '$lib/photography';
+	import { findPhotograph, photographRouteSlug } from '#lib/photography.ts';
 	import {
 		photographyCollections,
 		type Photograph,

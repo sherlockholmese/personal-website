@@ -1,4 +1,4 @@
-import { loadTerminalLayoutData } from '$lib/blog';
+import { loadTerminalLayoutData } from '#lib/blog.ts';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = () => ({

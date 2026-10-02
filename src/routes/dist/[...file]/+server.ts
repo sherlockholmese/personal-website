@@ -2,8 +2,8 @@ import { createReadStream } from 'node:fs';
 import { realpath, stat } from 'node:fs/promises';
 import { basename, isAbsolute, relative, resolve } from 'node:path';
 import { Readable } from 'node:stream';
-import { env } from '$env/dynamic/private';
-import { DOWNLOAD_ACCESS_COOKIE, hasValidDownloadAccess } from '$lib/server/download-access';
+import { DIST_DIR } from '$app/env/private';
+import { DOWNLOAD_ACCESS_COOKIE, hasValidDownloadAccess } from '#lib/server/download-access.ts';
 import type { RequestHandler } from './$types';
 
 const contentTypes: Record<string, string> = {
@@ -132,7 +132,7 @@ function contentType(file: string) {
 }
 
 function distributionRoot() {
-	distributionRootPromise ??= realpath(env.DIST_DIR ?? resolve(process.cwd(), 'dists')).catch(
+	distributionRootPromise ??= realpath(DIST_DIR ?? resolve(process.cwd(), 'dists')).catch(
 		(error) => {
 			distributionRootPromise = undefined;
 			throw error;

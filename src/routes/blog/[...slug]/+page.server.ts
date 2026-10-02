@@ -1,4 +1,4 @@
-import { normalizePostPath, resolveBlogPath } from '$lib/blog';
+import { normalizePostPath, resolveBlogPath } from '#lib/blog.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = ({ params }) => {

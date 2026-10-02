@@ -1,5 +1,5 @@
 import matter from 'gray-matter';
-import type { BlogPost, BlogPostMeta } from '$lib/terminal/types';
+import type { BlogPost, BlogPostMeta } from '#lib/terminal/types.ts';
 import aboutRaw from '../content/about.md?raw';
 
 type Frontmatter = {

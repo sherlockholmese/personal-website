@@ -4,13 +4,13 @@ import {
 	DOWNLOAD_ACCESS_MAX_AGE_SECONDS,
 	downloadAccessConfigured,
 	hasValidDownloadAccess
-} from '$lib/server/download-access';
+} from '#lib/server/download-access.ts';
 import {
 	noStoreJson,
 	turnstileConfiguration,
 	validateTurnstileRequest
-} from '$lib/server/turnstile';
-import { TURNSTILE_DOWNLOAD_ACTION } from '$lib/turnstile';
+} from '#lib/server/turnstile.ts';
+import { TURNSTILE_DOWNLOAD_ACTION } from '#lib/turnstile.ts';
 import type { RequestHandler } from './$types';
 
 function configured() {

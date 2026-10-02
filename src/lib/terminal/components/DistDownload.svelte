@@ -6,8 +6,8 @@
 		releaseTurnstileChallenge,
 		turnstileSiteKey,
 		type TurnstileApi
-	} from '$lib/terminal/turnstile-client';
-	import { TURNSTILE_DOWNLOAD_ACTION } from '$lib/turnstile';
+	} from '#lib/terminal/turnstile-client.ts';
+	import { TURNSTILE_DOWNLOAD_ACTION } from '#lib/turnstile.ts';
 	import { onDestroy, tick } from 'svelte';
 
 	type DownloadStatus =
@@ -170,7 +170,7 @@
 
 	function triggerDownload() {
 		const anchor = document.createElement('a');
-		anchor.href = resolve(href as `/dist/${string}`);
+		anchor.href = resolve(href.slice(1) as `dist/${string}`);
 		anchor.download = '';
 		anchor.hidden = true;
 		document.body.append(anchor);

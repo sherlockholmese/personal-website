@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { SITE_TITLE } from '$lib/site';
-	import NotFoundPanel from '$lib/terminal/components/NotFoundPanel.svelte';
+	import { SITE_TITLE } from '#lib/site.ts';
+	import NotFoundPanel from '#lib/terminal/components/NotFoundPanel.svelte';
 </script>
 
 <svelte:head>

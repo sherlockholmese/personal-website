@@ -8,9 +8,9 @@
 		type Photograph,
 		type PhotographyCollection,
 		type PhotographyRouteState
-	} from '$lib/photography';
-	import { SITE_DESCRIPTION, SITE_TITLE, TERMINAL_TITLE } from '$lib/site';
-	import { completeTerminalInput } from '$lib/terminal/autocomplete';
+	} from '#lib/photography.ts';
+	import { SITE_DESCRIPTION, SITE_TITLE, TERMINAL_TITLE } from '#lib/site.ts';
+	import { completeTerminalInput } from '#lib/terminal/autocomplete.ts';
 	import {
 		buildTree,
 		createFileSystem,
@@ -22,16 +22,16 @@
 		resolveEntry,
 		ROOT_DIRECTORY,
 		toHomeRelative
-	} from '$lib/terminal/filesystem';
-	import { helpfulCommands } from '$lib/terminal/help';
+	} from '#lib/terminal/filesystem.ts';
+	import { helpfulCommands } from '#lib/terminal/help.ts';
 	import {
 		highlightMarkdownCode,
 		parseMarkdown,
 		tokenizeMarkdown,
 		type MarkdownTokens
-	} from '$lib/terminal/markdown';
-	import { isMobileViewport, shouldAvoidImplicitFocusViewport } from '$lib/terminal/media';
-	import { createPostSearchIndex, searchPosts, sortPosts } from '$lib/terminal/search';
+	} from '#lib/terminal/markdown.ts';
+	import { isMobileViewport, shouldAvoidImplicitFocusViewport } from '#lib/terminal/media.ts';
+	import { createPostSearchIndex, searchPosts, sortPosts } from '#lib/terminal/search.ts';
 	import {
 		DEFAULT_BLOG_SORT,
 		type BlogPost,
@@ -39,17 +39,17 @@
 		type BlogSort,
 		type ShellLine,
 		type Theme
-	} from '$lib/terminal/types';
-	import BlogBrowser from '$lib/terminal/components/BlogBrowser.svelte';
-	import HelpPanel from '$lib/terminal/components/HelpPanel.svelte';
-	import NotFoundPanel from '$lib/terminal/components/NotFoundPanel.svelte';
-	import PhotographyGallery from '$lib/terminal/components/PhotographyGallery.svelte';
-	import PostReader from '$lib/terminal/components/PostReader.svelte';
-	import ProjectsTable from '$lib/terminal/components/ProjectsTable.svelte';
-	import PromptForm from '$lib/terminal/components/PromptForm.svelte';
-	import RouteLinks from '$lib/terminal/components/RouteLinks.svelte';
-	import SocialLinks from '$lib/terminal/components/SocialLinks.svelte';
-	import WelcomeBanner from '$lib/terminal/components/WelcomeBanner.svelte';
+	} from '#lib/terminal/types.ts';
+	import BlogBrowser from '#lib/terminal/components/BlogBrowser.svelte';
+	import HelpPanel from '#lib/terminal/components/HelpPanel.svelte';
+	import NotFoundPanel from '#lib/terminal/components/NotFoundPanel.svelte';
+	import PhotographyGallery from '#lib/terminal/components/PhotographyGallery.svelte';
+	import PostReader from '#lib/terminal/components/PostReader.svelte';
+	import ProjectsTable from '#lib/terminal/components/ProjectsTable.svelte';
+	import PromptForm from '#lib/terminal/components/PromptForm.svelte';
+	import RouteLinks from '#lib/terminal/components/RouteLinks.svelte';
+	import SocialLinks from '#lib/terminal/components/SocialLinks.svelte';
+	import WelcomeBanner from '#lib/terminal/components/WelcomeBanner.svelte';
 
 	const ABOUT_PATH = 'about';
 	const THEME_STORAGE_KEY = 'flexoki-theme';
@@ -866,25 +866,18 @@
 	async function updateUrlForView(path?: string) {
 		let route = resolve('/');
 		if (path) {
-			route =
-				path === ABOUT_PATH ? resolve('/about' as const) : resolve(`/${path}` as `/blog/${string}`);
+			route = path === ABOUT_PATH ? resolve('/about' as const) : resolve(path as `blog/${string}`);
 		}
 		await goto(route, {
-			keepFocus: true,
-			noScroll: true,
-			replaceState: false
+			reset: false
 		});
 	}
 
 	async function updatePhotographyUrl(path: string) {
 		const route =
-			path === 'photography'
-				? resolve('/photography')
-				: resolve(`/${path}` as `/photography/${string}`);
+			path === 'photography' ? resolve('photography') : resolve(path as `photography/${string}`);
 		await goto(route, {
-			keepFocus: true,
-			noScroll: true,
-			replaceState: false
+			reset: false
 		});
 	}
 

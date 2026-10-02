@@ -14,7 +14,7 @@
 	</div>
 	{#each entries as entry (entry.url)}
 		<a
-			href={resolve(entry.url as `/blog/${string}`)}
+			href={resolve(entry.url.slice(1) as `blog/${string}`)}
 			class="text-[var(--cyan)] no-underline hover:text-[var(--yellow)]"
 		>
 			{entry.name}

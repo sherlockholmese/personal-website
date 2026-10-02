@@ -2,7 +2,7 @@
 	/* eslint-disable svelte/no-at-html-tags */
 
 	import { onDestroy } from 'svelte';
-	import HighlightedCode from '$lib/HighlightedCode.svelte';
+	import HighlightedCode from '#lib/HighlightedCode.svelte';
 	import DistDownload from './DistDownload.svelte';
 	import type { MdBlock } from '../types';
 

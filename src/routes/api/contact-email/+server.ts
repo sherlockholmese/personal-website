@@ -1,14 +1,14 @@
-import { env } from '$env/dynamic/private';
+import { CONTACT_EMAIL } from '$app/env/private';
 import {
 	noStoreJson,
 	turnstileConfiguration,
 	validateTurnstileRequest
-} from '$lib/server/turnstile';
-import { TURNSTILE_EMAIL_ACTION } from '$lib/turnstile';
+} from '#lib/server/turnstile.ts';
+import { TURNSTILE_EMAIL_ACTION } from '#lib/turnstile.ts';
 import type { RequestHandler } from './$types';
 
 function contactConfiguration() {
-	const email = env.CONTACT_EMAIL?.trim();
+	const email = CONTACT_EMAIL?.trim();
 	const { configured: turnstileConfigured } = turnstileConfiguration();
 	const configured = Boolean(email && turnstileConfigured);
 

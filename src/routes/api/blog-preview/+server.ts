@@ -1,5 +1,4 @@
-import { json } from '@sveltejs/kit';
-import { loadPost, postPreviewMarkdown } from '$lib/blog';
+import { loadPost, postPreviewMarkdown } from '#lib/blog.ts';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = ({ request, url }) => {
@@ -7,7 +6,7 @@ export const GET: RequestHandler = ({ request, url }) => {
 	const post = path ? loadPost(path) : undefined;
 
 	if (!post) {
-		return json({ message: 'post not found' }, { status: 404 });
+		return Response.json({ message: 'post not found' }, { status: 404 });
 	}
 
 	const markdown = postPreviewMarkdown(post.markdown);
@@ -21,7 +20,7 @@ export const GET: RequestHandler = ({ request, url }) => {
 		return new Response(null, { status: 304, headers });
 	}
 
-	return json({ markdown }, { headers });
+	return Response.json({ markdown }, { headers });
 };
 
 function previewEtag(markdown: string) {

@@ -1,4 +1,4 @@
-import { resolvePhotographyPath } from '$lib/photography';
+import { resolvePhotographyPath } from '#lib/photography.ts';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = ({ params }) => {

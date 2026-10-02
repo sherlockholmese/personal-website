@@ -2,7 +2,7 @@
 
 ## Stack and Commands
 
-This is a Bun-managed SvelteKit 2 application using Svelte 5 runes, TypeScript, Tailwind CSS 4, and `@sveltejs/adapter-node`.
+This is a Bun-managed SvelteKit 3 application using Svelte 5 runes, TypeScript, Tailwind CSS 4, and `@sveltejs/adapter-node`. SvelteKit configuration lives in `vite.config.ts`; shared imports use the `#lib` subpath alias declared in `package.json`. Node-based tooling requires Node 22.17 or later.
 
 - `bun install --frozen-lockfile`: install the locked dependency set.
 - `bun run dev`: start the Vite development server.

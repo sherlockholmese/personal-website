@@ -57,7 +57,7 @@
 			<span class="welcome-label">latest</span>
 			<div class="welcome-latest-list">
 				{#each posts.slice(0, 5) as post (post.path)}
-					<a href={resolve(`/${post.path}` as `/blog/${string}`)} class="welcome-latest-link">
+					<a href={resolve(post.path as `blog/${string}`)} class="welcome-latest-link">
 						<span class="text-[var(--tx-2)]">{formatPostDate(post.date)}</span>
 						<strong class="welcome-latest-title">
 							{post.title}

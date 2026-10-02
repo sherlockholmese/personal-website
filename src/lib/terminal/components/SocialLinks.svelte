@@ -6,8 +6,8 @@
 		releaseTurnstileChallenge,
 		turnstileSiteKey,
 		type TurnstileApi
-	} from '$lib/terminal/turnstile-client';
-	import { TURNSTILE_EMAIL_ACTION } from '$lib/turnstile';
+	} from '#lib/terminal/turnstile-client.ts';
+	import { TURNSTILE_EMAIL_ACTION } from '#lib/turnstile.ts';
 	import { onDestroy, tick } from 'svelte';
 
 	type RevealStatus =

@@ -1,4 +1,4 @@
-import { env } from '$env/dynamic/public';
+import { PUBLIC_TURNSTILE_SITE_KEY } from '$app/env/public';
 
 export type TurnstileApi = {
 	render: (
@@ -29,7 +29,7 @@ const loadTimeoutMs = 10_000;
 const testSiteKey = '1x00000000000000000000AA';
 
 export function turnstileSiteKey() {
-	return env.PUBLIC_TURNSTILE_SITE_KEY || (import.meta.env.DEV ? testSiteKey : '');
+	return PUBLIC_TURNSTILE_SITE_KEY || (import.meta.env.DEV ? testSiteKey : '');
 }
 
 export function loadTurnstile() {

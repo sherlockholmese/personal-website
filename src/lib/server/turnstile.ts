@@ -1,5 +1,8 @@
-import { env } from '$env/dynamic/private';
-import { json } from '@sveltejs/kit';
+import {
+	TURNSTILE_SECRET_KEY,
+	TURNSTILE_HOSTNAME,
+	TRUST_CLOUDFLARE_IP_HEADER
+} from '$app/env/private';
 import { consumeRateLimit } from './rate-limit';
 
 const siteverifyUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
@@ -27,7 +30,7 @@ export function noStoreJson(
 	status = 200,
 	extraHeaders?: HeadersInit
 ) {
-	return json(body, {
+	return Response.json(body, {
 		status,
 		headers: {
 			'cache-control': 'private, no-store, max-age=0',
@@ -38,7 +41,7 @@ export function noStoreJson(
 }
 
 export function turnstileConfiguration() {
-	const secretKey = env.TURNSTILE_SECRET_KEY?.trim() || (import.meta.env.DEV ? testSecretKey : '');
+	const secretKey = TURNSTILE_SECRET_KEY?.trim() || (import.meta.env.DEV ? testSecretKey : '');
 	const usingTestSecret = import.meta.env.DEV && testSecretKeys.has(secretKey);
 	const configured =
 		Boolean(secretKey) &&
@@ -81,7 +84,7 @@ export async function verifyTurnstileToken(
 
 	const testingResponse =
 		usingTestSecret || verification.metadata?.result_with_testing_key === true;
-	const expectedHostname = env.TURNSTILE_HOSTNAME?.trim();
+	const expectedHostname = TURNSTILE_HOSTNAME?.trim();
 	const validHostname =
 		testingResponse || !expectedHostname || verification.hostname === expectedHostname;
 	const validAction = testingResponse || verification.action === action;
@@ -123,7 +126,7 @@ export async function validateTurnstileRequest(
 }
 
 export function turnstileClientAddress(request: Request, fallback: () => string): string {
-	if (env.TRUST_CLOUDFLARE_IP_HEADER?.trim() === 'true') {
+	if (TRUST_CLOUDFLARE_IP_HEADER?.trim() === 'true') {
 		const cloudflareAddress = request.headers.get('cf-connecting-ip')?.trim();
 		if (cloudflareAddress) return cloudflareAddress;
 	}
