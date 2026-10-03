@@ -55,6 +55,7 @@
 	}
 
 	.workspace {
+		--layer-notice: 40;
 		color-scheme: dark;
 		--bg: #100f0f;
 		--bg-2: #1c1b1a;
@@ -102,6 +103,122 @@
 }
 
 @layer components {
+	.cookie-layer {
+		display: contents;
+	}
+
+	.cookie-banner {
+		position: fixed;
+		right: max(24px, env(safe-area-inset-right));
+		bottom: max(24px, env(safe-area-inset-bottom));
+		z-index: var(--layer-notice);
+		width: min(420px, calc(100% - 48px));
+		padding: 24px;
+		border: 1px solid var(--border);
+		border-radius: 5px;
+		background: var(--bg-2);
+		color: var(--tx);
+		font-size: 14px;
+		line-height: 1.5;
+	}
+
+	.cookie-banner {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		max-height: calc(100dvh - 48px);
+	}
+
+	.cookie-banner-content {
+		flex: 1;
+		min-height: 0;
+		min-width: 0;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+
+	.cookie-banner h2 {
+		margin: 0 0 8px;
+		font-size: 16px;
+		font-weight: 700;
+	}
+
+	.cookie-banner p {
+		max-width: 75ch;
+		margin: 0;
+	}
+
+	.cookie-button,
+	.cookie-details summary {
+		min-height: 44px;
+		cursor: pointer;
+		touch-action: manipulation;
+	}
+
+	.cookie-button {
+		flex: none;
+		padding: 8px 24px;
+		border: 1px solid var(--hard-border);
+		background: var(--bg);
+		color: var(--tx);
+		font-weight: 700;
+	}
+
+	.cookie-button:hover,
+	.cookie-button:active {
+		background: var(--ui-2);
+	}
+
+	.cookie-details summary {
+		width: fit-content;
+		align-content: center;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.cookie-details dl {
+		display: grid;
+		gap: 16px;
+		max-width: 75ch;
+		margin: 8px 0 0;
+	}
+
+	.cookie-details dt {
+		font-weight: 700;
+	}
+
+	.cookie-details dd {
+		margin: 4px 0 0;
+	}
+
+	.cookie-details a {
+		color: inherit;
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
+	.cookie-button:focus-visible,
+	.cookie-details summary:focus-visible,
+	.cookie-details a:focus-visible,
+	.cookie-banner h2:focus-visible {
+		outline: 2px solid var(--tx);
+		outline-offset: 4px;
+	}
+
+	@media (max-width: 760px) {
+		.cookie-banner {
+			right: max(16px, env(safe-area-inset-right));
+			bottom: max(16px, env(safe-area-inset-bottom));
+			max-width: calc(100% - 32px);
+		}
+
+		.cookie-banner {
+			width: min(420px, calc(100% - 32px));
+			max-height: calc(100dvh - 32px);
+			padding: 16px;
+		}
+	}
+
 	.terminal-workspace {
 		@apply flex h-screen min-h-screen w-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--tx)] max-[760px]:h-[100dvh] max-[760px]:min-h-[100dvh];
 	}

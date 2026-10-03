@@ -122,6 +122,13 @@ export const commandCatalog: CommandHelp[] = [
 		executable: true
 	},
 	{
+		name: 'cookies',
+		command: 'cookies',
+		description: 'Reopen the cookies and privacy notice.',
+		group: 'display',
+		executable: true
+	},
+	{
 		name: 'clear',
 		command: 'clear',
 		description: 'Clear terminal output.',

@@ -1,7 +1,14 @@
 <script lang="ts">
 	import './layout.css';
+	import CookieBanner from '#lib/terminal/components/CookieBanner.svelte';
+	import { COOKIE_NOTICE_CONTEXT } from '#lib/cookie-notice.ts';
+	import { setContext } from 'svelte';
 
-	let { children } = $props();
+	let { children, data } = $props();
+	let cookieBanner = $state<{ reopen: () => Promise<void> }>();
+	setContext(COOKIE_NOTICE_CONTEXT, () => {
+		void cookieBanner?.reopen();
+	});
 </script>
 
 <svelte:head>
@@ -14,3 +21,6 @@
 	/>
 </svelte:head>
 {@render children()}
+<div class="workspace cookie-layer">
+	<CookieBanner bind:this={cookieBanner} dismissed={data.cookieNoticeDismissed} />
+</div>
