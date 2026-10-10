@@ -253,6 +253,11 @@
 		scrollbar-color: var(--border) transparent;
 	}
 
+	.terminal-viewport:has(> .blog-browser, > .photography-gallery) {
+		/* Panels own their scrolling; terminal scroll offsets must not clip their headers. */
+		overflow: clip;
+	}
+
 	.terminal-scrollback {
 		@apply contents;
 	}
