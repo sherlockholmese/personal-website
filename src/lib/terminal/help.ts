@@ -56,8 +56,8 @@ export const commandCatalog: CommandHelp[] = [
 	},
 	{
 		name: 'photography',
-		command: 'photography [collection]',
-		description: 'Fuzzy-find photography collections and preview their frames.',
+		command: 'photography',
+		description: 'Show all photographs. Select a photo to view it full size.',
 		group: 'start',
 		executable: true,
 		shortcutOrder: 2

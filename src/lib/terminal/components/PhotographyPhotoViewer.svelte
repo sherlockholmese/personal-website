@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { resolve } from '$app/paths';
 	import type { Photograph } from '../../../content/photography';
 	import { centerElementPoint, pointRatio } from '../geometry';
 	import { isMobileViewport } from '../media';
@@ -25,9 +26,34 @@
 	let photoDragStartY = 0;
 	let photoDragScrollLeft = 0;
 	let photoDragScrollTop = 0;
+	let metadata = $state<Pick<Photograph, 'camera' | 'date' | 'width' | 'height'>>({});
+	let metadataUnavailable = $state(false);
+	let failedImageSource = $state('');
+	let imageFailed = $derived(!!photograph && failedImageSource === photograph.src);
+
+	$effect(() => {
+		metadata = {};
+		metadataUnavailable = false;
+		const key = photograph?.objectKey;
+		if (!key) return;
+		const controller = new AbortController();
+		void fetch(`${resolve('/api/photography-metadata')}?file=${encodeURIComponent(key)}`, {
+			signal: controller.signal
+		})
+			.then(async (response) => {
+				if (!response.ok) throw new Error('Metadata unavailable');
+				const details = await response.json();
+				if (!controller.signal.aborted) metadata = details;
+			})
+			.catch(() => {
+				if (!controller.signal.aborted) metadataUnavailable = true;
+			});
+		return () => controller.abort();
+	});
 
 	$effect(() => {
 		if (photograph) {
+			failedImageSource = '';
 			resetPhotoInteraction();
 			void showPhoto();
 		} else if (photoDialog?.open) {
@@ -164,46 +190,57 @@
 		>
 			<div bind:this={photoViewerScroll} class="photography-photo-viewer-scroll">
 				<div class="photography-photo-viewer-image-stage">
-					<button
-						type="button"
-						class={`photography-photo-viewer-image-button ${photoZoomed ? 'photography-photo-viewer-image-button-zoomed' : ''} ${photoDragging ? 'photography-photo-viewer-image-button-dragging' : ''}`}
-						aria-label={photoZoomed
-							? 'Drag photograph to pan; click to zoom out'
-							: 'Zoom photograph in'}
-						onclick={togglePhotoZoom}
-						onpointerdown={handlePhotoPointerDown}
-						onpointermove={handlePhotoPointerMove}
-						onpointerup={handlePhotoPointerUp}
-						onpointercancel={handlePhotoPointerCancel}
-					>
-						<img
-							bind:this={photoViewerImage}
-							src={photograph.src}
-							alt={photograph.alt}
-							width={photograph.width}
-							height={photograph.height}
-							draggable={false}
-							class="photography-photo-viewer-image"
-						/>
-					</button>
+					{#if imageFailed}
+						<p class="photography-image-error" role="status">
+							Photograph unavailable. Close and reopen it to try again.
+						</p>
+					{:else}
+						<button
+							type="button"
+							class={`photography-photo-viewer-image-button ${photoZoomed ? 'photography-photo-viewer-image-button-zoomed' : ''} ${photoDragging ? 'photography-photo-viewer-image-button-dragging' : ''}`}
+							aria-label={photoZoomed
+								? 'Drag photograph to pan; click to zoom out'
+								: 'Zoom photograph in'}
+							onclick={togglePhotoZoom}
+							onpointerdown={handlePhotoPointerDown}
+							onpointermove={handlePhotoPointerMove}
+							onpointerup={handlePhotoPointerUp}
+							onpointercancel={handlePhotoPointerCancel}
+						>
+							<img
+								bind:this={photoViewerImage}
+								src={photograph.src}
+								alt={photograph.alt}
+								width={photograph.width}
+								height={photograph.height}
+								draggable={false}
+								class="photography-photo-viewer-image"
+								onerror={() => {
+									failedImageSource = photograph?.src ?? '';
+								}}
+							/>
+						</button>
+					{/if}
 				</div>
 			</div>
 			<div bind:this={photoViewerMeta} class="photography-photo-viewer-meta">
-				{#if photograph.date || photograph.camera}
+				{#if metadata.date || metadata.camera}
 					<dl>
-						{#if photograph.date}
+						{#if metadata.date}
 							<div>
 								<dt>Date</dt>
-								<dd>{photograph.date}</dd>
+								<dd>{metadata.date}</dd>
 							</div>
 						{/if}
-						{#if photograph.camera}
+						{#if metadata.camera}
 							<div>
 								<dt>Camera</dt>
-								<dd>{photograph.camera}</dd>
+								<dd>{metadata.camera}</dd>
 							</div>
 						{/if}
 					</dl>
+				{:else if metadataUnavailable}
+					<span>Camera details unavailable.</span>
 				{/if}
 			</div>
 			<button

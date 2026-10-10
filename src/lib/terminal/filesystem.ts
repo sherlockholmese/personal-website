@@ -1,9 +1,4 @@
-import {
-	photographyCollections,
-	type Photograph,
-	type PhotographyCollection
-} from '../../content/photography';
-import { photographFileName } from '../photography';
+import { photographFileName, type Photograph } from '../photography';
 import { commandCatalog } from './help';
 import type { BlogPostMeta } from './types';
 
@@ -19,7 +14,7 @@ export type FileSystem = {
 
 export type VirtualFile =
 	| { kind: 'post'; post: BlogPostMeta }
-	| { kind: 'photograph'; collection: PhotographyCollection; photograph: Photograph }
+	| { kind: 'photograph'; photograph: Photograph }
 	| { kind: 'executable'; command: string };
 
 export type FsEntry = {
@@ -28,7 +23,10 @@ export type FsEntry = {
 	type: 'file' | 'directory';
 };
 
-export function createFileSystem(posts: BlogPostMeta[]): FileSystem {
+export function createFileSystem(
+	posts: BlogPostMeta[],
+	photographs: Photograph[] = []
+): FileSystem {
 	const files = new Map<string, VirtualFile>();
 	const directories = new Set<string>([ROOT_DIRECTORY, BIN_DIRECTORY, '/home', HOME_DIRECTORY]);
 
@@ -46,13 +44,10 @@ export function createFileSystem(posts: BlogPostMeta[]): FileSystem {
 	}
 
 	directories.add(`${HOME_DIRECTORY}/photography`);
-	for (const collection of photographyCollections) {
-		directories.add(`${HOME_DIRECTORY}/photography/${collection.slug}`);
-		for (const photograph of collection.photographs) {
-			const filePath = `${HOME_DIRECTORY}/photography/${collection.slug}/${photographFileName(photograph)}`;
-			files.set(filePath, { kind: 'photograph', collection, photograph });
-			ensureDirectoriesForFile(filePath, directories);
-		}
+	for (const photograph of photographs) {
+		const filePath = `${HOME_DIRECTORY}/photography/${photograph.objectKey ?? photographFileName(photograph)}`;
+		files.set(filePath, { kind: 'photograph', photograph });
+		ensureDirectoriesForFile(filePath, directories);
 	}
 
 	return {

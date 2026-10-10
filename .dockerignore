@@ -6,6 +6,8 @@
 .svelte-kit
 build
 node_modules
+dists
+static/photography
 
 .DS_Store
 *.log

@@ -1,82 +1,43 @@
-import {
-	photographyCollections,
-	type Photograph,
-	type PhotographyCollection
-} from '../content/photography';
+import type { Photograph } from '../content/photography';
 
-export type { Photograph, PhotographyCollection } from '../content/photography';
+export type { Photograph } from '../content/photography';
 
-export type PhotographyRouteState = {
-	collectionSlug?: string;
-	photoSlug?: string;
-};
-
-const collectionsBySlug = new Map<string, PhotographyCollection>();
-const photographsByCollectionSlug = new Map<string, Map<string, Photograph>>();
-
-for (const collection of photographyCollections) {
-	if (collectionsBySlug.has(collection.slug)) {
-		throw new Error(`Duplicate photography collection slug: ${collection.slug}`);
-	}
-	collectionsBySlug.set(collection.slug, collection);
-
-	const photographsBySlug = new Map<string, Photograph>();
-	for (const photograph of collection.photographs) {
-		const slug = photographRouteSlug(photograph);
-		if (photographsBySlug.has(slug)) {
-			throw new Error(`Duplicate photograph slug in ${collection.slug}: ${slug}`);
-		}
-		photographsBySlug.set(slug, photograph);
-	}
-	photographsByCollectionSlug.set(collection.slug, photographsBySlug);
-}
+export type PhotographyRouteState = { photoSlug?: string };
 
 export function photographFileName(photograph: Photograph) {
-	return photograph.src.split('/').at(-1) ?? photograph.id;
+	return (photograph.objectKey ?? photograph.src).split('/').at(-1) ?? photograph.id;
 }
 
 export function photographRouteSlug(photograph: Photograph) {
-	return photographFileName(photograph).replace(/\.[^.]+$/, '');
+	return (photograph.objectKey ?? photographFileName(photograph)).replace(/\.[^.]+$/, '');
 }
 
-export function photographRoutePath(collection: PhotographyCollection, photograph: Photograph) {
-	return `photography/${collection.slug}/${photographRouteSlug(photograph)}`;
+export function photographRoutePath(photograph: Photograph) {
+	return `photography/${photographRouteSlug(photograph).split('/').map(encodeURIComponent).join('/')}`;
 }
 
-export function resolvePhotographyPath(path: string): PhotographyRouteState | undefined {
-	const normalizedPath = normalizePhotographyPath(path);
-	if (normalizedPath === 'photography') return {};
-
-	const [, collectionSlug, photoSlug, ...rest] = normalizedPath.split('/');
-	if (!collectionSlug || rest.length) return undefined;
-
-	const collection = collectionsBySlug.get(collectionSlug);
-	if (!collection) return undefined;
-	if (!photoSlug) return { collectionSlug };
-
-	const photograph = photographsByCollectionSlug.get(collectionSlug)?.get(photoSlug);
-	if (!photograph) return undefined;
-
-	return { collectionSlug, photoSlug };
+export function findPhotograph(photographs: Photograph[], photoSlug?: string) {
+	if (!photoSlug) return undefined;
+	const exact = photographs.find((photo) => photographRouteSlug(photo) === photoSlug);
+	if (exact) return exact;
+	// Support the previous flat URLs when the filename is unique.
+	const matches = photographs.filter(
+		(photo) => photographFileName(photo).replace(/\.[^.]+$/, '') === photoSlug
+	);
+	return matches.length === 1 ? matches[0] : undefined;
 }
 
-export function findPhotographyCollection(slug?: string) {
-	if (!slug) return undefined;
-	return collectionsBySlug.get(slug);
-}
-
-export function findPhotograph(collectionSlug?: string, photoSlug?: string) {
-	if (!collectionSlug || !photoSlug) return undefined;
-
-	const collection = findPhotographyCollection(collectionSlug);
-	if (!collection) return undefined;
-
-	const photograph = photographsByCollectionSlug.get(collectionSlug)?.get(photoSlug);
-	if (!photograph) return undefined;
-
-	return { collection, photograph };
-}
-
-function normalizePhotographyPath(path: string) {
-	return path.replace(/^\/+|\/+$/g, '');
+export function resolvePhotographyPath(
+	path: string,
+	photographs: Photograph[]
+): PhotographyRouteState | undefined {
+	const normalized = path.replace(/^\/+|\/+$/g, '');
+	if (normalized === 'photography') return {};
+	if (!normalized.startsWith('photography/')) return undefined;
+	const slug = normalized.slice('photography/'.length);
+	const photograph = findPhotograph(photographs, slug);
+	if (photograph) return { photoSlug: photographRouteSlug(photograph) };
+	// Old folder links still open the complete gallery.
+	if (photographs.some((photo) => photo.objectKey?.startsWith(`${slug}/`))) return {};
+	return undefined;
 }

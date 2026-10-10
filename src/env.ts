@@ -10,5 +10,13 @@ export const variables = defineEnvVars({
 	TRUST_CLOUDFLARE_IP_HEADER: { schema: optionalString },
 	CONTACT_EMAIL: { schema: optionalString },
 	DOWNLOAD_ACCESS_SECRET: { schema: optionalString },
-	DIST_DIR: { schema: optionalString }
+	R2_ACCOUNT_ID: { schema: optionalString },
+	R2_ENDPOINT: { schema: optionalString },
+	R2_BUCKET_NAME: { schema: optionalString },
+	R2_ACCESS_KEY_ID: { schema: optionalString },
+	R2_SECRET_ACCESS_KEY: { schema: optionalString },
+	R2_DIST_PREFIX: { schema: optionalString },
+	R2_PHOTOGRAPHY_PREFIX: { schema: optionalString },
+	PHOTOGRAPHY_CDN_URL: { schema: optionalString },
+	PHOTOGRAPHY_HEADER_KEY: { schema: optionalString }
 });

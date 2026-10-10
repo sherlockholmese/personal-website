@@ -1,13 +1,12 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { getContext, onMount, tick } from 'svelte';
+	import { getContext, onMount, tick, untrack } from 'svelte';
 	import { COOKIE_NOTICE_CONTEXT } from '#lib/cookie-notice.ts';
 	import {
 		photographRoutePath,
 		photographRouteSlug,
 		type Photograph,
-		type PhotographyCollection,
 		type PhotographyRouteState
 	} from '#lib/photography.ts';
 	import { SITE_DESCRIPTION, SITE_TITLE, TERMINAL_TITLE } from '#lib/site.ts';
@@ -64,6 +63,9 @@
 			asciiSeed: number;
 			post?: BlogPost;
 			photography?: PhotographyRouteState;
+			photographs: Photograph[];
+			headerPhotograph?: Photograph;
+			photographyUnavailable: boolean;
 			requestedPath?: string;
 			notFound?: boolean;
 		};
@@ -82,10 +84,14 @@
 	let activePostPath = $state('');
 	let currentView = $state<'terminal' | 'post'>('terminal');
 	let blogBrowserVisible = $state(false);
-	let photographyBrowserVisible = $state(false);
-	let photographyQuery = $state('');
-	let photographyCollectionSlug = $state('');
-	let photographyPhotoSlug = $state('');
+	let photographyBrowserVisible = $state(
+		untrack(
+			() =>
+				!!data.photography ||
+				(data.photographyUnavailable && !!data.requestedPath?.startsWith('photography'))
+		)
+	);
+	let photographyPhotoSlug = $state(untrack(() => data.photography?.photoSlug ?? ''));
 	let fzfQuery = $state('');
 	let fzfIndex = $state(0);
 	let blogSort = $state<BlogSort>(DEFAULT_BLOG_SORT);
@@ -97,7 +103,7 @@
 	let terminalTitleMeasurer = $state<HTMLSpanElement>();
 	let promptInput = $state<HTMLInputElement>();
 	let fzfInput = $state<HTMLInputElement>();
-	let photographyInput = $state<HTMLInputElement>();
+	let photographyClose = $state<HTMLButtonElement>();
 	let highlightedCode = $state<Record<string, string>>({});
 	let previewMarkdownByPath = $state<Record<string, string>>({});
 	let previewHighlightedCodeByKey = $state<Record<string, Record<string, string>>>({});
@@ -110,7 +116,11 @@
 	const mobileShortcuts = ['home', ...helpfulCommands.filter((command) => command !== 'home')];
 	const TITLE_TRUNCATION_SUFFIX = '[...]';
 
-	let fileSystem = $derived(createFileSystem(posts));
+	let allPhotographs = $derived([
+		...data.photographs,
+		...(data.headerPhotograph ? [data.headerPhotograph] : [])
+	]);
+	let fileSystem = $derived(createFileSystem(posts, allPhotographs));
 	let postsByPath = $derived(new Map(posts.map((post) => [post.path, post])));
 	let postSearchIndex = $derived(createPostSearchIndex(posts));
 	let selectedPost = $derived<BlogPostMeta>(
@@ -239,10 +249,11 @@
 		if (requestedPath && initializedRoutePath !== requestedPath) {
 			if (routeNotFound) {
 				history = [{ kind: 'not-found', path: requestedPath }];
-			} else if (routePhotography) {
-				photographyQuery = routePhotography.collectionSlug ?? '';
-				photographyCollectionSlug = routePhotography.collectionSlug ?? '';
-				photographyPhotoSlug = routePhotography.photoSlug ?? '';
+			} else if (
+				routePhotography ||
+				(data.photographyUnavailable && requestedPath.startsWith('photography'))
+			) {
+				photographyPhotoSlug = routePhotography?.photoSlug ?? '';
 				blogBrowserVisible = false;
 				photographyBrowserVisible = true;
 				currentView = 'terminal';
@@ -260,6 +271,10 @@
 			initializedRoutePath = requestedPath;
 		}
 		if (!requestedPath && initializedRoutePath) {
+			if (initializedRoutePath.startsWith('photography')) {
+				photographyBrowserVisible = false;
+				photographyPhotoSlug = '';
+			}
 			initializedRoutePath = undefined;
 		}
 	});
@@ -427,7 +442,7 @@
 		}
 		if (photographyBrowserVisible && event.key === 'ArrowUp') {
 			event.preventDefault();
-			photographyInput?.focus();
+			photographyClose?.focus({ preventScroll: true });
 		}
 		if (blogBrowserVisible && event.key === 'Escape') {
 			event.preventDefault();
@@ -513,8 +528,10 @@
 				history = [...history, { kind: 'projects' }];
 				return;
 			case 'photography':
-				photographyQuery = target;
-				photographyCollectionSlug = '';
+				if (target) {
+					print(['usage: photography'], 'error');
+					return;
+				}
 				photographyPhotoSlug = '';
 				void openPhotographyBrowser();
 				return;
@@ -635,7 +652,7 @@
 		}
 
 		if (entry.kind === 'photograph') {
-			void openPhotographyPhotograph(entry.collection, entry.photograph);
+			void openPhotographyPhotograph(entry.photograph);
 			return;
 		}
 		if (entry.kind === 'executable') {
@@ -691,15 +708,15 @@
 	async function openPhotographyBrowser() {
 		blogBrowserVisible = false;
 		photographyBrowserVisible = true;
+		await updatePhotographyUrl('photography');
 		await tick();
 		if (!shouldAvoidImplicitFocus()) {
-			photographyInput?.focus();
+			photographyClose?.focus({ preventScroll: true });
 		}
 	}
 
 	function closePhotographyBrowser() {
 		photographyBrowserVisible = false;
-		photographyCollectionSlug = '';
 		photographyPhotoSlug = '';
 		if (requestedPath?.startsWith('photography')) {
 			void updateUrlForView();
@@ -712,46 +729,22 @@
 			closeBlogSearch();
 			return;
 		}
-		if (photographyCollectionSlug) {
-			void closePhotographyCollection();
-			return;
-		}
 		if (photographyBrowserVisible) {
 			closePhotographyBrowser();
 		}
 	}
 
-	async function openPhotographyCollection(collection: PhotographyCollection) {
-		photographyQuery = collection.slug;
-		photographyCollectionSlug = collection.slug;
-		photographyPhotoSlug = '';
-		photographyBrowserVisible = true;
-		await updatePhotographyUrl(`photography/${collection.slug}`);
-	}
-
-	async function closePhotographyCollection() {
-		photographyCollectionSlug = '';
-		photographyPhotoSlug = '';
-		photographyQuery = '';
-		await updatePhotographyUrl('photography');
-	}
-
-	async function openPhotographyPhotograph(
-		collection: PhotographyCollection,
-		photograph: Photograph
-	) {
-		photographyQuery = collection.slug;
-		photographyCollectionSlug = collection.slug;
+	async function openPhotographyPhotograph(photograph: Photograph) {
 		photographyPhotoSlug = photographRouteSlug(photograph);
 		blogBrowserVisible = false;
 		photographyBrowserVisible = true;
 		await tick();
-		await updatePhotographyUrl(photographRoutePath(collection, photograph));
+		await updatePhotographyUrl(photographRoutePath(photograph));
 	}
 
-	async function closePhotographyPhotograph(collection: PhotographyCollection) {
+	async function closePhotographyPhotograph() {
 		photographyPhotoSlug = '';
-		await updatePhotographyUrl(`photography/${collection.slug}`);
+		await updatePhotographyUrl('photography');
 	}
 
 	function closePostView() {
@@ -820,7 +813,7 @@
 				entry.type === 'file' ? resolveEntry(fileSystem, entry.path) : undefined;
 			const relativePath =
 				resolvedEntry?.type === 'file' && resolvedEntry.kind === 'photograph'
-					? photographRoutePath(resolvedEntry.collection, resolvedEntry.photograph)
+					? photographRoutePath(resolvedEntry.photograph)
 					: entry.type === 'file'
 						? postPathFromFilePath(entry.path)
 						: toHomeRelative(entry.path);
@@ -934,11 +927,12 @@
 					>
 						X
 					</button>
-				{:else if photographyBrowserVisible && photographyCollectionSlug}
+				{:else if photographyBrowserVisible}
 					<button
 						type="button"
 						class="terminal-close-button terminal-panel-close-button"
-						aria-label="close active terminal panel"
+						aria-label="Close photography gallery"
+						bind:this={photographyClose}
 						onclick={closeActiveTerminalPanel}
 					>
 						X
@@ -1018,13 +1012,11 @@
 
 					{#if photographyBrowserVisible}
 						<PhotographyGallery
-							initialQuery={photographyQuery}
-							initialCollectionSlug={photographyCollectionSlug}
+							photographs={data.photographs}
+							headerPhotograph={data.headerPhotograph}
+							unavailable={data.photographyUnavailable}
 							initialPhotoSlug={photographyPhotoSlug}
-							bind:inputRef={photographyInput}
 							onClose={closePhotographyBrowser}
-							onCollectionOpen={openPhotographyCollection}
-							onCollectionClose={closePhotographyCollection}
 							onPhotoOpen={openPhotographyPhotograph}
 							onPhotoClose={closePhotographyPhotograph}
 						/>

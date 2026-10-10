@@ -39,49 +39,79 @@ npm run build
 
 You can preview the production build with `npm run preview`.
 
-## Photography collections
+## Private R2 storage
 
-The `photography` terminal command reads its collections from
-`src/content/photography.ts`. Copy each collection's images into
-`static/photography/<collection-slug>/`, then add its metadata:
+Downloads and photography are streamed through the SvelteKit server from a private
+Cloudflare R2 bucket. No R2 credentials or signed bucket URLs are sent to the browser.
+The existing Turnstile verification still protects `/dist/*`. Images under the photography prefix are visible to site visitors through
+`/media/photography/*`; other bucket prefixes cannot be read through that endpoint.
 
-```ts
-export const photographyCollections: PhotographyCollection[] = [
-	{
-		slug: 'street',
-		title: 'Street',
-		description: 'Unscripted moments in the city.',
-		photographs: [
-			{
-				id: 'street-001',
-				src: '/photography/street/street-001.jpg',
-				thumbnailSrc: '/photography/street/street-001-640.jpg',
-				thumbnailSrcset:
-					'/photography/street/street-001-640.jpg 640w, /photography/street/street-001-960.jpg 960w',
-				alt: 'Describe what is visibly present in the photograph.',
-				title: 'Photograph title',
-				description: 'Optional visible caption for the photograph.',
-				location: 'Singapore',
-				date: '2026',
-				camera: 'Camera and lens',
-				width: 2400,
-				height: 1600
-			}
-		]
-	}
-];
-```
+Copy the R2 settings from `.env.example` into your `.env`:
 
-Run `photography` to show every collection or `photography street` to show one.
-`thumbnailSrc` and `thumbnailSrcset` are optional but recommended for full-resolution originals.
+- `R2_ACCOUNT_ID`: your Cloudflare account ID.
+- `R2_BUCKET_NAME`: the private bucket name.
+- `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY`: R2 S3 credentials with Object Read
+  permission scoped to this bucket, including listing objects.
+- `R2_ENDPOINT`: optional full S3 API endpoint for a jurisdiction-specific bucket;
+  otherwise `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com` is used.
+- `R2_DIST_PREFIX`: defaults to `dists`.
+- `R2_PHOTOGRAPHY_PREFIX`: defaults to `photography`.
 
-Collections also appear under `~/photography` in the virtual filesystem. Running
-`cat` on an image opens its expanded view. Public photograph URLs use the image
-filename without its extension:
+Keep the bucket's public access disabled. Upload your files using these object keys,
+preserving the nested directories:
 
 ```text
-/photography/natural-phenomena/20260613_184334_watermark
+dists/iycep2026/pwn/cat/dist.zip
+dists/iycep2026/pwn/dog/dist.zip
+dists/iycep2026/pwn/missing-santa/dist.zip
+dists/iycep2026/pwn/student-learning-space/dist.zip
+photography/DSC01407_watermark.jpg
+photography/DSC01408_watermark.jpg
 ```
+
+For example, the existing `::dist[Download challenge files]{file="iycep2026/pwn/cat/dist.zip"}`
+link reads `dists/iycep2026/pwn/cat/dist.zip`. Blog download links require no edits.
+Upload the contents of local `dists/` under `dists/` and local `static/photography/`
+under `photography/`. Local files remain available for migration, but the UI has no
+local-file fallback. Docker excludes them from the image and no longer mounts `dists/`.
+Restart the server after configuring `.env`.
+
+HEAD, byte ranges, conditional requests, and streamed responses are supported.
+Downloads retain private, no-store caching; published images can be cached for one
+hour. Replace an image under a new filename if it must update immediately.
+An unconfigured bucket returns 503; R2 failures return a generic error without
+exposing credentials or upstream error details.
+
+## Photography gallery
+
+`photography` and `/photography` show a single gallery, discovered automatically by
+listing images under `R2_PHOTOGRAPHY_PREFIX` (for example `photography/*.jpg`). Upload or delete an image in
+R2 and the gallery updates on the next request after its one-minute listing cache
+expires. Listing follows pagination, so all nested folders are included. Keep this
+prefix for images you intend to publish. There is no hardcoded photograph list.
+
+- `PHOTOGRAPHY_HEADER_KEY` selects the one fixed full-width header image, relative
+  to the photography prefix. It defaults to `DSC01407_watermark.jpg`.
+  That image is shown once, above the remaining photos.
+- `PHOTOGRAPHY_CDN_URL` optionally sets the image URL base, for example
+  `https://cdn.example.com/media/photography`. Configure that hostname to cache and
+  forward this site's photo route; the R2 bucket remains private. Leave it empty
+  to use the same-origin `/media/photography` route, which Cloudflare can cache.
+
+Photos load lazily. Select one to open the full-size viewer and close it to return
+to the same gallery position. The Photography heading shares the blog post title's
+font size, weight, and mobile scaling.
+
+Camera, lens, and capture date are read on demand from embedded EXIF/XMP metadata,
+using a bounded 256 KiB header request to R2. JPEG EXIF/XMP and PNG/WebP EXIF are
+supported. Missing or stripped metadata is omitted; no camera values are guessed.
+The parser returns only camera, date, and dimensions. Metadata results are cached
+for one hour. Image files without supported embedded metadata still display normally.
+
+Photos also appear in the virtual filesystem under `~/photography`, preserving
+R2 subfolders. `cat` opens their viewer. Existing folder-based photo URLs continue
+to work, and folder URLs open the same complete gallery. Unique filename-only
+photo URLs are supported too.
 
 ## Protected email reveal
 
