@@ -797,7 +797,7 @@
 	}
 
 	.photography-gallery-header {
-		@apply mx-auto w-full flex-none pb-[10px] text-[16px];
+		@apply mx-auto w-full flex-none pb-[24px] text-[16px];
 		max-width: calc(var(--photography-content-width) + 2 * var(--content-inline-padding));
 	}
 
