@@ -41,7 +41,7 @@
 	<header class="photography-gallery-header">
 		<h1 id="photography-heading">Photography</h1>
 	</header>
-	<div class="photography-gallery-scroll">
+	<div class="photography-gallery-content">
 		{#if unavailable}
 			<p class="photography-gallery-empty" role="status">
 				Photographs are unavailable right now. <button

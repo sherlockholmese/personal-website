@@ -790,8 +790,10 @@
 	}
 
 	.photography-gallery {
-		@apply absolute inset-0 flex min-h-0 flex-col overflow-hidden bg-[var(--bg)];
+		@apply absolute inset-0 min-h-0 overflow-auto bg-[var(--bg)];
 		--photography-content-width: 1080px;
+		scrollbar-width: thin;
+		scrollbar-color: var(--border) transparent;
 	}
 
 	.photography-gallery-header {
@@ -803,11 +805,9 @@
 		@apply m-0;
 	}
 
-	.photography-gallery-scroll {
-		@apply min-h-0 flex-1 overflow-auto pb-[16px];
+	.photography-gallery-content {
+		@apply flow-root pb-[16px];
 		padding-inline: var(--content-inline-padding);
-		scrollbar-width: thin;
-		scrollbar-color: var(--border) transparent;
 	}
 
 	.photography-gallery-grid,
@@ -827,7 +827,7 @@
 	}
 
 	.photography-gallery-image {
-		@apply block w-full cursor-zoom-in overflow-hidden border-0 bg-[var(--bg-2)] p-0 focus-visible:ring-2 focus-visible:ring-[var(--yellow)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] focus-visible:outline-none;
+		@apply block w-full cursor-zoom-in border-0 bg-[var(--bg-2)] p-0 focus-visible:ring-2 focus-visible:ring-[var(--yellow)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] focus-visible:outline-none;
 	}
 
 	.photography-gallery-image:hover {
@@ -853,7 +853,7 @@
 	}
 
 	@media (max-width: 760px) {
-		.photography-gallery-scroll {
+		.photography-gallery-content {
 			@apply pb-[12px];
 		}
 
