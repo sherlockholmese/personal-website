@@ -91,7 +91,7 @@ expires. Listing follows pagination, so all nested folders are included. Keep th
 prefix for images you intend to publish. There is no hardcoded photograph list.
 
 - `PHOTOGRAPHY_HEADER_KEY` selects the one fixed full-width header image, relative
-  to the photography prefix. It defaults to `DSC01407_watermark.jpg`.
+  to the photography prefix. It defaults to `DSC02177_watermark.jpg`.
   That image is shown once, above the remaining photos.
 - `PHOTOGRAPHY_CDN_URL` optionally sets the image URL base, for example
   `https://cdn.example.com/media/photography`. Configure that hostname to cache and

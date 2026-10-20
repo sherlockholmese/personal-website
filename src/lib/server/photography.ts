@@ -71,7 +71,7 @@ async function readCatalog(): Promise<PhotographyCatalog> {
 			if (!token || seenTokens.has(token)) throw new Error('Invalid R2 continuation token');
 			seenTokens.add(token);
 		} while (token);
-		const headerKey = (PHOTOGRAPHY_HEADER_KEY ?? 'DSC01407_watermark.jpg').replace(
+		const headerKey = (PHOTOGRAPHY_HEADER_KEY ?? 'DSC02177_watermark.jpg').replace(
 			/^photography\//,
 			''
 		);
