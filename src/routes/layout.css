@@ -54,6 +54,16 @@
 		border: 0;
 	}
 
+	:root {
+		--motion-fast: 120ms;
+		--motion-normal: 180ms;
+		--motion-slow: 260ms;
+		--motion-exit: 120ms;
+		--ease-standard: cubic-bezier(0.2, 0, 0, 1);
+		--ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
+		--ease-exit: cubic-bezier(0.4, 0, 1, 1);
+	}
+
 	.workspace {
 		--layer-notice: 40;
 		color-scheme: dark;
@@ -789,45 +799,76 @@
 		@apply mb-[6px] flex justify-between gap-[12px] text-[var(--tx-2)] max-[760px]:grid max-[760px]:grid-cols-1 max-[760px]:gap-[2px];
 	}
 
+	/* A fixed header, a horizontal stage of photographs, and a preview strip that scrubs it. */
 	.photography-gallery {
-		@apply absolute inset-0 min-h-0 overflow-auto bg-[var(--bg)];
-		--photography-content-width: 1080px;
-		scrollbar-width: thin;
-		scrollbar-color: var(--border) transparent;
+		@apply absolute inset-0 grid min-h-0 overflow-hidden bg-[var(--bg)];
+		grid-template-rows: auto minmax(0, 1fr) auto;
+		--photography-gap: 16px;
+		--photography-stage-bottom: 16px;
 	}
 
 	.photography-gallery-header {
-		@apply mx-auto w-full flex-none pb-[24px] text-[16px];
-		max-width: calc(var(--photography-content-width) + 2 * var(--content-inline-padding));
+		@apply row-start-1 mx-auto mb-[16px] flex-none text-[16px];
+		/* Align the title with the photo edges rather than the padded box. */
+		width: calc(100% - 2 * var(--content-inline-padding));
+		padding-inline: 0;
 	}
 
 	.photography-gallery-header h1 {
 		@apply m-0;
 	}
 
-	.photography-gallery-content {
-		@apply flow-root pb-[16px];
+	.photography-gallery-stage {
+		@apply col-start-1 row-start-2 min-h-0 overflow-x-auto overflow-y-hidden;
+		padding-bottom: var(--photography-stage-bottom);
+		container: photography-stage / size;
+		overscroll-behavior-x: contain;
+		scrollbar-width: none;
+	}
+
+	.photography-gallery-track {
+		@apply flex h-full w-max;
+		gap: var(--photography-gap);
 		padding-inline: var(--content-inline-padding);
 	}
 
-	.photography-gallery-grid,
-	.photography-gallery-hero {
-		width: 100%;
-		max-width: var(--photography-content-width);
-		margin-inline: auto;
+	/* One row by default: rows flatten and cells keep their order through flex order. */
+	.photography-gallery-rows,
+	.photography-gallery-row {
+		display: contents;
 	}
 
-	.photography-gallery-grid {
-		columns: 2;
-		column-gap: 24px;
+	/* Explicit stage-relative heights keep each photograph's intrinsic width correct. */
+	.photography-gallery-cell {
+		@apply flex-none;
+		height: 100cqh;
+	}
+
+	/* Two continuous rows on tall narrow stages; the header photograph spans both. */
+	@media (max-width: 760px) {
+		@container photography-stage (min-height: 480px) {
+			.photography-gallery-rows {
+				@apply flex flex-col;
+				gap: var(--photography-gap);
+			}
+
+			.photography-gallery-row {
+				@apply flex;
+				gap: var(--photography-gap);
+			}
+
+			.photography-gallery-row .photography-gallery-cell {
+				height: calc((100cqh - var(--photography-gap)) / 2);
+			}
+		}
 	}
 
 	.photography-gallery-frame {
-		@apply m-0 mb-[24px] min-w-0 break-inside-avoid;
+		@apply m-0 h-full;
 	}
 
 	.photography-gallery-image {
-		@apply block w-full cursor-zoom-in border-0 bg-[var(--bg-2)] p-0 focus-visible:ring-2 focus-visible:ring-[var(--yellow)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] focus-visible:outline-none;
+		@apply block h-full w-auto cursor-zoom-in border-0 bg-[var(--bg-2)] p-0 focus-visible:ring-2 focus-visible:ring-[var(--yellow)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] focus-visible:outline-none;
 	}
 
 	.photography-gallery-image:hover {
@@ -840,7 +881,7 @@
 	}
 
 	.photography-gallery-image img {
-		@apply block h-auto w-full;
+		@apply block h-full w-auto max-w-none;
 	}
 
 	.photography-retry {
@@ -852,18 +893,63 @@
 		@apply block p-[16px] text-center text-[var(--tx-2)];
 	}
 
+	/* Overlays the stage's bottom-right corner, sharing its grid cell rather than scrolling with it. */
+	.photography-gallery-hint {
+		@apply col-start-1 row-start-2 m-0 min-h-[32px] cursor-pointer self-end justify-self-end border-0 px-[8px] py-[4px] text-[14px] text-[var(--tx)] hover:bg-[var(--yellow)] hover:text-[var(--bg)] focus-visible:ring-2 focus-visible:ring-[var(--yellow)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] focus-visible:outline-none max-[760px]:min-h-[44px] max-[760px]:px-[12px];
+		margin-bottom: calc(var(--photography-stage-bottom) + 8px);
+		margin-right: calc(var(--content-inline-padding) + 8px);
+		background-color: color-mix(in srgb, var(--bg) 80%, transparent);
+	}
+
+	/* Opacity follows scroll progress inline; once hidden the hint also leaves the tab order. */
+	.photography-gallery-hint-hidden {
+		@apply pointer-events-none invisible;
+	}
+
+	.photography-gallery-hint-touch {
+		@apply hidden;
+	}
+
+	@media (pointer: coarse) {
+		.photography-gallery-hint-touch {
+			@apply inline;
+		}
+
+		.photography-gallery-hint-pointer {
+			@apply hidden;
+		}
+	}
+
+	.photography-gallery-strip {
+		@apply row-start-3 flex flex-none gap-[6px] overflow-x-auto overflow-y-hidden border-t border-[var(--border)] py-[8px];
+		padding-inline: var(--content-inline-padding);
+		padding-bottom: max(8px, env(safe-area-inset-bottom));
+		scrollbar-width: none;
+	}
+
 	@media (max-width: 760px) {
-		.photography-gallery-content {
-			@apply pb-[12px];
+		.photography-gallery {
+			--photography-gap: 8px;
+			--photography-stage-bottom: 12px;
 		}
 
-		.photography-gallery-grid {
-			columns: 1;
+		.photography-gallery-header {
+			@apply mb-[12px];
 		}
+	}
 
-		.photography-gallery-frame {
-			@apply mb-[16px];
-		}
+	.photography-gallery-thumbnail {
+		@apply block h-[48px] flex-none cursor-pointer border-0 bg-[var(--bg-2)] p-0 opacity-50 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--yellow)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] focus-visible:outline-none;
+	}
+
+	.photography-gallery-thumbnail-active {
+		@apply opacity-100;
+		outline: 1px solid var(--yellow);
+		outline-offset: 2px;
+	}
+
+	.photography-gallery-thumbnail img {
+		@apply block aspect-[3/2] h-full w-auto object-cover;
 	}
 
 	.photography-photo-viewer {
@@ -1116,5 +1202,85 @@
 
 	.welcome-latest-title {
 		@apply min-w-0 overflow-hidden font-normal text-ellipsis whitespace-nowrap max-[760px]:whitespace-normal;
+	}
+
+	/* Motion: each surface animates as one plane; the photo viewer animates both ways. */
+	@keyframes motion-rise {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
+	}
+
+	@keyframes motion-drop {
+		from {
+			opacity: 0;
+			transform: translateY(-4px);
+		}
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.post-reader,
+		.blog-browser,
+		.photography-gallery {
+			animation: motion-rise var(--motion-normal) var(--ease-enter);
+		}
+
+		.blog-browser-sort-menu {
+			animation: motion-drop var(--motion-fast) var(--ease-enter);
+		}
+
+		.cookie-banner {
+			animation: motion-rise var(--motion-slow) var(--ease-enter);
+		}
+
+		.photography-gallery-image,
+		.photography-gallery-thumbnail {
+			outline: 1px solid transparent;
+			outline-offset: 2px;
+			transition:
+				outline-color var(--motion-fast) var(--ease-standard),
+				opacity var(--motion-fast) var(--ease-standard);
+		}
+
+		/* Closed state carries the exit timing; [open] carries the enter timing. */
+		.photography-photo-viewer,
+		.photography-photo-viewer::backdrop {
+			opacity: 0;
+			transition:
+				opacity var(--motion-exit) var(--ease-exit),
+				display var(--motion-exit) allow-discrete,
+				overlay var(--motion-exit) allow-discrete;
+		}
+
+		.photography-photo-viewer-image-stage {
+			transform: scale(0.985);
+			transition: transform var(--motion-exit) var(--ease-exit);
+		}
+
+		.photography-photo-viewer[open],
+		.photography-photo-viewer[open]::backdrop {
+			opacity: 1;
+			transition:
+				opacity var(--motion-normal) var(--ease-enter),
+				display var(--motion-normal) allow-discrete,
+				overlay var(--motion-normal) allow-discrete;
+		}
+
+		.photography-photo-viewer[open] .photography-photo-viewer-image-stage {
+			transform: none;
+			transition: transform var(--motion-normal) var(--ease-enter);
+		}
+
+		@starting-style {
+			.photography-photo-viewer[open],
+			.photography-photo-viewer[open]::backdrop {
+				opacity: 0;
+			}
+
+			.photography-photo-viewer[open] .photography-photo-viewer-image-stage {
+				transform: scale(0.985);
+			}
+		}
 	}
 }

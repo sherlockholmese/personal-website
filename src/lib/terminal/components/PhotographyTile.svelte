@@ -15,7 +15,7 @@
 	let imageFailed = $derived(failedSource === (photograph.thumbnailSrc ?? photograph.src));
 </script>
 
-<figure class="photography-gallery-frame">
+<figure class="photography-gallery-frame" data-photo-id={photograph.id}>
 	<button
 		type="button"
 		class="photography-gallery-image"

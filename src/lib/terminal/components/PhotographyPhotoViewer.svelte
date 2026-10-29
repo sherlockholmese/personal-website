@@ -29,12 +29,15 @@
 	let metadata = $state<Pick<Photograph, 'camera' | 'date' | 'width' | 'height'>>({});
 	let metadataUnavailable = $state(false);
 	let failedImageSource = $state('');
-	let imageFailed = $derived(!!photograph && failedImageSource === photograph.src);
+	// Keep the last photograph rendered so the dialog can animate closed.
+	let shownPhotograph = $state<Photograph>();
+	let imageFailed = $derived(!!shownPhotograph && failedImageSource === shownPhotograph.src);
 
 	$effect(() => {
+		if (!photograph) return;
 		metadata = {};
 		metadataUnavailable = false;
-		const key = photograph?.objectKey;
+		const key = photograph.objectKey;
 		if (!key) return;
 		const controller = new AbortController();
 		void fetch(`${resolve('/api/photography-metadata')}?file=${encodeURIComponent(key)}`, {
@@ -53,6 +56,7 @@
 
 	$effect(() => {
 		if (photograph) {
+			shownPhotograph = photograph;
 			failedImageSource = '';
 			resetPhotoInteraction();
 			void showPhoto();
@@ -179,11 +183,11 @@
 <dialog
 	bind:this={photoDialog}
 	class="photography-photo-viewer"
-	aria-label={photograph ? `Photograph: ${photograph.alt}` : 'Photograph viewer'}
+	aria-label={shownPhotograph ? `Photograph: ${shownPhotograph.alt}` : 'Photograph viewer'}
 	onclose={handleDialogClose}
 	onclick={handleDialogClick}
 >
-	{#if photograph}
+	{#if shownPhotograph}
 		<div
 			class="photography-photo-viewer-stage"
 			style={`--photography-meta-height: ${photoViewerMetaHeight}px`}
@@ -209,14 +213,14 @@
 						>
 							<img
 								bind:this={photoViewerImage}
-								src={photograph.src}
-								alt={photograph.alt}
-								width={photograph.width}
-								height={photograph.height}
+								src={shownPhotograph.src}
+								alt={shownPhotograph.alt}
+								width={shownPhotograph.width}
+								height={shownPhotograph.height}
 								draggable={false}
 								class="photography-photo-viewer-image"
 								onerror={() => {
-									failedImageSource = photograph?.src ?? '';
+									failedImageSource = shownPhotograph?.src ?? '';
 								}}
 							/>
 						</button>

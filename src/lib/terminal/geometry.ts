@@ -23,3 +23,14 @@ export function centerElementPoint(
 function clamp(value: number, min: number, max: number) {
 	return Math.min(max, Math.max(min, value));
 }
+
+export function centeredScrollLeft(scrollContainer: HTMLElement, target: HTMLElement) {
+	const scrollRect = scrollContainer.getBoundingClientRect();
+	const targetRect = target.getBoundingClientRect();
+	return (
+		scrollContainer.scrollLeft +
+		targetRect.left -
+		scrollRect.left -
+		(scrollContainer.clientWidth - targetRect.width) / 2
+	);
+}
