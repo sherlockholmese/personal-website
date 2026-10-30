@@ -4,15 +4,15 @@
 
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { compactMask, desktopMask, renderAscii } from '../ascii-art';
+	import { pixelMask, renderAscii } from '../ascii-art';
 
 	let { compact = false, seed }: { compact?: boolean; seed: number } = $props();
 
 	const bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 	const trailDuration = 560;
 	const revealDuration = 1400;
-	const scrambleSymbols = '@#$%^&*!-+';
-	let rows = $derived(renderAscii(compact ? compactMask : desktopMask, seed));
+	const scrambleSymbols = '░▒▓█';
+	let rows = $derived(renderAscii(pixelMask, seed, compact ? 1 : 2));
 	let width = $derived(Math.max(...rows.map((row) => row.length)));
 	let original = $derived(rows.map((row) => row.padEnd(width)));
 	let originalText = $derived(original.join('\n'));
@@ -82,18 +82,21 @@
 					.map((character, x) => {
 						let influence = 0;
 						for (const point of trail) {
-							const distance = Math.hypot((x - point.x) * 0.9, (y - point.y) * 1.5);
+							const distance = Math.hypot(
+								(x - point.x) * 0.9,
+								(y - point.y) * (compact ? 0.9 : 1.5)
+							);
 							const age = reducedMotion ? 0 : (time - point.time) / trailDuration;
 							influence = Math.max(influence, Math.max(0, 1 - distance / 6.3) * (1 - age));
 						}
 						const threshold = bayer[((y & 3) << 2) | (x & 3)] / 16;
 						if (character === ' ')
-							return influence > 0.55 && threshold < influence * 0.3 ? '.' : ' ';
+							return influence > 0.55 && threshold < influence * 0.3 ? '░' : ' ';
 						const shade = Math.max(
 							0,
 							Math.min(4, Math.floor((1 - influence) * 5 + threshold * 0.7))
 						);
-						return ['.', ':', '+', '*', character][shade];
+						return ['░', '░', '▒', '▓', character][shade];
 					})
 					.join('')
 			)
@@ -167,6 +170,6 @@
 	class:compact
 	class="welcome-ascii"
 	aria-hidden="true"
-	style={`--ascii-radius: ${revealRadius}%; width: ${width}ch; height: ${rows.length * 1.08}em`}
+	style={`--ascii-radius: ${revealRadius}%; width: ${width}ch; height: ${rows.length}lh`}
 	onpointermove={movePointer}
 	onpointerleave={leavePointer}>{displayedText ?? originalText}</pre>

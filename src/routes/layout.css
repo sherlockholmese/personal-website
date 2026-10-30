@@ -1136,7 +1136,7 @@
 	}
 
 	.welcome-ascii {
-		@apply mb-[10px] cursor-default text-[7px] leading-[1.08] whitespace-pre text-[var(--cyan)] select-none;
+		@apply mb-[10px] cursor-default text-[5px] leading-[1.2] whitespace-pre text-[var(--cyan)] select-none;
 		mask-image: radial-gradient(
 			circle at left bottom,
 			#000 max(0%, calc(var(--ascii-radius) - 8%)),
@@ -1151,7 +1151,7 @@
 	}
 
 	.welcome-ascii.compact {
-		@apply hidden text-[4.5px] leading-[1.08];
+		@apply hidden text-[4px] leading-[0.6];
 	}
 
 	@media (max-width: 760px) {
