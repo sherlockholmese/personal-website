@@ -115,7 +115,7 @@ function codeBlockInfo(block: Tokens.Code) {
 	};
 }
 
-async function highlightCode(code: string, language: string, theme: Theme) {
+export async function highlightCode(code: string, language: string, theme: Theme) {
 	const key = `${theme}:${codeKey(code, language)}`;
 	const cached = highlightedCodeCache.get(key);
 	if (cached) {
