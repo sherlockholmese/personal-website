@@ -218,42 +218,44 @@
 	{#if toc.length > 1}
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="post-toc-region" onkeydown={handleTocKeydown}>
-			<div class="post-toc-bar">
-				<Button
-					bind:ref={tocToggle}
-					size="sm"
-					block
-					align="start"
-					aria-expanded={mobileTocOpen}
-					aria-controls="post-toc"
-					onclick={() => (mobileTocOpen = !mobileTocOpen)}
-				>
-					<span class="post-toc-toggle-label">contents</span>
-					{#if currentSection}
-						<span class="post-toc-current">{currentSection}</span>
-					{/if}
-					<Chevron class="post-toc-chevron" open={mobileTocOpen} />
-				</Button>
-			</div>
-
-			<nav
-				id="post-toc"
-				class:post-toc-open={mobileTocOpen}
-				class="post-toc ui-scroll"
-				aria-label="table of contents"
-			>
-				<span class="post-toc-heading">contents</span>
-				{#each toc as heading (heading.id)}
-					<button
-						type="button"
-						class={`post-toc-item post-toc-depth-${tocDepth(heading.level)}`}
-						aria-current={heading.id === activeHeading ? 'location' : undefined}
-						onclick={() => scrollToHeading(heading.id)}
+			<div class="post-toc-dock">
+				<div class="post-toc-bar">
+					<Button
+						bind:ref={tocToggle}
+						size="sm"
+						block
+						align="start"
+						aria-expanded={mobileTocOpen}
+						aria-controls="post-toc"
+						onclick={() => (mobileTocOpen = !mobileTocOpen)}
 					>
-						{heading.text}
-					</button>
-				{/each}
-			</nav>
+						<span class="post-toc-toggle-label">contents</span>
+						{#if currentSection}
+							<span class="post-toc-current">{currentSection}</span>
+						{/if}
+						<Chevron class="post-toc-chevron" open={!mobileTocOpen} />
+					</Button>
+				</div>
+
+				<nav
+					id="post-toc"
+					class:post-toc-open={mobileTocOpen}
+					class="post-toc ui-scroll"
+					aria-label="table of contents"
+				>
+					<span class="post-toc-heading">contents</span>
+					{#each toc as heading (heading.id)}
+						<button
+							type="button"
+							class={`post-toc-item post-toc-depth-${tocDepth(heading.level)}`}
+							aria-current={heading.id === activeHeading ? 'location' : undefined}
+							onclick={() => scrollToHeading(heading.id)}
+						>
+							{heading.text}
+						</button>
+					{/each}
+				</nav>
+			</div>
 		</div>
 	{/if}
 
@@ -303,7 +305,12 @@
 		overflow: hidden;
 	}
 
-	.post-toc-region {
+	.post-content {
+		padding-top: var(--space-4);
+	}
+
+	.post-toc-region,
+	.post-toc-dock {
 		display: contents;
 	}
 
@@ -394,17 +401,25 @@
 		padding-left: calc(var(--space-8) + var(--space-4));
 	}
 
+	/* Without room for the rail, contents joins the bottom dock, where mobile controls live. */
 	@media (max-width: 1400px) {
 		.post-toc-region {
-			position: relative;
 			z-index: var(--layer-sticky);
 			display: block;
-			width: 100%;
-			max-width: 86ch;
 			flex: none;
+			order: 1;
+			padding: var(--space-2) var(--content-inline-padding)
+				max(var(--space-2), env(safe-area-inset-bottom));
+			border-top: 1px solid var(--border);
+			background: var(--surface);
+			font-size: var(--text-reading);
+		}
+
+		.post-toc-dock {
+			position: relative;
+			display: block;
+			max-width: calc(86ch - 2 * var(--content-inline-padding));
 			margin-inline: auto;
-			/* Clears the close button that overhangs the window border. */
-			padding: calc(var(--control-close) / 2 + var(--space-1)) var(--content-inline-padding) 0;
 		}
 
 		.post-toc-bar {
@@ -416,15 +431,16 @@
 		}
 
 		.post-toc.post-toc-open {
-			top: 100%;
-			right: var(--content-inline-padding);
-			left: var(--content-inline-padding);
+			top: auto;
+			right: 0;
+			bottom: calc(100% + var(--space-2) + 1px);
+			left: 0;
 			display: block;
 			width: auto;
 			max-height: 50vh;
 			padding: var(--space-1);
 			border-color: var(--border-control);
-			border-top: 0;
+			border-bottom: 0;
 			background: var(--surface);
 			box-shadow: var(--shadow-floating);
 			transform: none;
@@ -438,9 +454,14 @@
 			padding-block: var(--space-1);
 		}
 
+		.post-content {
+			/* Clears the close button that overhangs the window border. */
+			padding-top: calc(var(--control-close) / 2 + var(--space-2));
+		}
+
 		@media (prefers-reduced-motion: no-preference) {
 			.post-toc.post-toc-open {
-				animation: motion-drop var(--motion-fast) var(--ease-enter);
+				animation: motion-rise var(--motion-fast) var(--ease-enter);
 			}
 		}
 	}
@@ -460,7 +481,8 @@
 		min-width: 0;
 		max-width: 86ch;
 		margin-inline: auto;
-		padding: var(--space-4) var(--content-inline-padding) 56px;
+		padding-inline: var(--content-inline-padding);
+		padding-bottom: 56px;
 		font-size: var(--text-reading);
 	}
 
@@ -485,7 +507,6 @@
 		}
 
 		.post-content {
-			padding-top: var(--space-3);
 			padding-bottom: var(--space-8);
 		}
 	}

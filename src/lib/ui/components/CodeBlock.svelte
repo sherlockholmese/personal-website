@@ -1,8 +1,8 @@
 <!--
 	@component
-	Fenced code block: language label in the top rule, copy button, and line-number
+	Fenced code block: language label and copy button in the top rule, and a line-number
 	gutter (hidden on mobile). The copy button reveals on hover where hover exists and is
-	always visible on touch.
+	always visible on touch. The block reserves space around the rule for its touch target.
 
 	Pass `html` for markup that is already highlighted, or `highlight` to run Shiki here
 	(`theme` defaults to the site theme). `compact` drops line numbers and shrinks the text.
@@ -74,18 +74,20 @@
 </script>
 
 <div class={['ui-code not-prose', className]} class:ui-code-compact={compact}>
-	<span class="ui-code-language">{language}</span>
-	<button
-		type="button"
-		class="ui-code-copy"
-		class:ui-code-copy-active={Boolean(copyState)}
-		aria-label={`${copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed, retry copying' : 'Copy'} ${language} code`}
-		onclick={copy}
-	>
-		<span aria-live="polite">
-			{copyState === 'copied' ? 'copied' : copyState === 'failed' ? 'retry' : 'copy'}
-		</span>
-	</button>
+	<div class="ui-code-legend">
+		<button
+			type="button"
+			class="ui-code-copy"
+			class:ui-code-copy-active={Boolean(copyState)}
+			aria-label={`${copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed, retry copying' : 'Copy'} ${language} code`}
+			onclick={copy}
+		>
+			<span aria-live="polite">
+				{copyState === 'copied' ? 'copied' : copyState === 'failed' ? 'retry' : 'copy'}
+			</span>
+		</button>
+		<span class="ui-code-language">{language}</span>
+	</div>
 	<div class={['ui-code-grid', showLineNumbers && 'ui-code-grid-numbered']}>
 		{#if showLineNumbers}
 			<ol class="ui-code-lines" aria-hidden="true">
@@ -104,48 +106,62 @@
 
 <style>
 	.ui-code {
+		--ui-code-legend: max(var(--control-close), var(--target-min));
+		--ui-code-top: calc(var(--ui-code-legend) / 2 + var(--space-half));
 		position: relative;
-		margin-block: var(--space-3);
+		margin-block: calc(var(--ui-code-legend) / 2 + var(--space-2)) var(--space-3);
 		border-block: 1px solid var(--border);
 		background: var(--surface);
 	}
 
 	.ui-code-compact {
-		margin-block: var(--space-2);
+		margin-bottom: var(--space-2);
 	}
 
-	.ui-code-language {
+	.ui-code-legend {
 		position: absolute;
 		top: 0;
 		right: var(--space-3);
 		z-index: var(--layer-raised);
-		padding-inline: var(--space-1);
-		background: var(--surface);
-		color: var(--accent);
+		display: flex;
+		height: var(--ui-code-legend);
+		align-items: center;
+		gap: var(--space-2);
 		font-size: var(--text-caption);
 		line-height: 1;
-		text-transform: lowercase;
 		transform: translateY(-50%);
 	}
 
-	.ui-code-copy {
-		position: absolute;
-		top: var(--space-2);
-		right: var(--space-3);
-		z-index: var(--layer-raised);
-		min-width: 7ch;
-		min-height: max(var(--control-close), var(--target-min));
+	.ui-code-language {
 		padding-inline: var(--space-1);
 		background: var(--surface);
+		color: var(--accent);
+		text-transform: lowercase;
+	}
+
+	.ui-code-copy {
+		/* Fits the longest label, so `copied` does not move the language. */
+		min-width: calc(6ch + 4 * var(--space-1));
+		height: 100%;
+		padding-inline: var(--space-1);
+		background: transparent;
 		color: var(--text-muted);
-		font-size: var(--text-caption);
-		line-height: 1;
-		text-align: right;
+		text-align: center;
+	}
+
+	/* The label's background cuts the rule, while the target around it stays invisible. */
+	.ui-code-copy > span {
+		padding-inline: var(--space-1);
+		background: var(--surface);
 	}
 
 	.ui-code-copy:hover,
 	.ui-code-copy:focus-visible {
 		color: var(--text);
+	}
+
+	.ui-code-copy:active {
+		color: var(--accent);
 	}
 
 	@media (hover: hover) and (pointer: fine) and (min-width: 761px) {
@@ -170,7 +186,7 @@
 
 	.ui-code-lines {
 		margin: 0;
-		padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+		padding: var(--ui-code-top) var(--space-2) var(--space-2) var(--space-3);
 		border-right: 1px solid var(--border);
 		color: var(--text-muted);
 		font-size: var(--text-reading);
@@ -187,7 +203,7 @@
 
 	.ui-code-grid :global(.ui-code-body pre) {
 		margin: 0;
-		padding: var(--space-2) var(--space-3);
+		padding: var(--ui-code-top) var(--space-3) var(--space-2);
 		overflow-x: auto;
 		/* Shiki writes its background inline; the block sits on the page surface instead. */
 		background: transparent !important;
@@ -202,7 +218,7 @@
 	}
 
 	.ui-code-compact .ui-code-grid :global(.ui-code-body pre) {
-		padding: var(--space-2);
+		padding-inline: var(--space-2);
 	}
 
 	.ui-code-compact .ui-code-grid :global(.ui-code-body code) {
