@@ -543,6 +543,9 @@
 		--content-inline-padding: var(--space-4);
 		--photography-gap: var(--space-4);
 		--photography-stage-bottom: var(--space-4);
+		/* The stage clips vertically, so it must hold the outline drawn outside each photograph. */
+		--photography-ring-room: calc(var(--focus-width) + var(--focus-offset));
+		--photography-header-gap: var(--space-4);
 		position: absolute;
 		inset: 0;
 		z-index: var(--layer-panel);
@@ -557,7 +560,7 @@
 		grid-row-start: 1;
 		/* Align the title with the photo edges rather than the padded box. */
 		width: calc(100% - 2 * var(--content-inline-padding));
-		margin: 0 auto var(--space-4);
+		margin: 0 auto calc(var(--photography-header-gap) - var(--photography-ring-room));
 		padding-top: var(--space-4);
 		flex: none;
 	}
@@ -570,6 +573,7 @@
 		grid-row-start: 2;
 		grid-column-start: 1;
 		min-height: 0;
+		padding-top: var(--photography-ring-room);
 		padding-bottom: var(--photography-stage-bottom);
 		overflow: auto hidden;
 		container: photography-stage / size;
@@ -698,10 +702,10 @@
 			--content-inline-padding: var(--space-2);
 			--photography-gap: var(--space-2);
 			--photography-stage-bottom: var(--space-3);
+			--photography-header-gap: var(--space-3);
 		}
 
 		.photography-gallery-header {
-			margin-bottom: var(--space-3);
 			padding-top: var(--space-3);
 		}
 	}
