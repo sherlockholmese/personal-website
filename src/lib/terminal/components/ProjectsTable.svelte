@@ -18,6 +18,11 @@
 			name: 'pwninit',
 			description: 'Automates setup for pwn and reverse engineering challenges.',
 			url: 'https://github.com/sherlockholmestech/pwninit'
+		},
+		{
+			name: 'rclone-tray',
+			description: 'Linux tray app for mounting rclone remotes as local folders.',
+			url: 'https://github.com/sherlockholmese/rclone-tray'
 		}
 	];
 

@@ -6,6 +6,10 @@
 		input = $bindable(''),
 		inputRef = $bindable<HTMLInputElement | undefined>(),
 		keyboardOpen = false,
+		completionListId,
+		activeCompletionId,
+		onInput,
+		onBlur,
 		onKeydown,
 		onSubmit,
 		onAutocomplete,
@@ -15,6 +19,11 @@
 		input?: string;
 		inputRef?: HTMLInputElement;
 		keyboardOpen?: boolean;
+		/** Set while a completion list is open. */
+		completionListId?: string;
+		activeCompletionId?: string;
+		onInput: () => void;
+		onBlur: () => void;
 		onKeydown: (event: KeyboardEvent) => void;
 		onSubmit: () => void;
 		onAutocomplete: () => void;
@@ -40,6 +49,13 @@
 			autocomplete="off"
 			autocorrect="off"
 			enterkeyhint="go"
+			role={completionListId ? 'combobox' : undefined}
+			aria-autocomplete={completionListId ? 'list' : undefined}
+			aria-expanded={completionListId ? true : undefined}
+			aria-controls={completionListId}
+			aria-activedescendant={activeCompletionId}
+			oninput={onInput}
+			onblur={onBlur}
 			onkeydown={onKeydown}
 		>
 			{#snippet actions()}

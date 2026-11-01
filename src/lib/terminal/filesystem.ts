@@ -30,10 +30,7 @@ export function createFileSystem(
 	const files = new Map<string, VirtualFile>();
 	const directories = new Set<string>([ROOT_DIRECTORY, BIN_DIRECTORY, '/home', HOME_DIRECTORY]);
 
-	for (const command of [
-		...commandCatalog.filter(({ executable }) => executable).map(({ name }) => name),
-		'sh'
-	]) {
+	for (const command of [...commandCatalog.map(({ name }) => name), 'sh']) {
 		files.set(`${BIN_DIRECTORY}/${command}`, { kind: 'executable', command });
 	}
 

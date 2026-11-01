@@ -10,7 +10,11 @@
 		type PhotographyRouteState
 	} from '#lib/photography.ts';
 	import { SITE_DESCRIPTION, SITE_TITLE, TERMINAL_TITLE } from '#lib/site.ts';
-	import { completeTerminalInput } from '#lib/terminal/autocomplete.ts';
+	import {
+		applyCompletion,
+		completeTerminalInput,
+		type CompletionMenu as CompletionMenuState
+	} from '#lib/terminal/autocomplete.ts';
 	import {
 		buildTree,
 		createFileSystem,
@@ -24,6 +28,12 @@
 		toHomeRelative
 	} from '#lib/terminal/filesystem.ts';
 	import { helpfulCommands } from '#lib/terminal/help.ts';
+	import {
+		formatListing,
+		runUnixCommand,
+		tokenizeCommand,
+		type UnixLine
+	} from '#lib/terminal/unix.ts';
 	import {
 		highlightMarkdownCode,
 		parseMarkdown,
@@ -41,6 +51,7 @@
 		type Theme
 	} from '#lib/terminal/types.ts';
 	import BlogBrowser from '#lib/terminal/components/BlogBrowser.svelte';
+	import CompletionMenu from '#lib/terminal/components/CompletionMenu.svelte';
 	import HelpPanel from '#lib/terminal/components/HelpPanel.svelte';
 	import NotFoundPanel from '#lib/terminal/components/NotFoundPanel.svelte';
 	import PhotographyGallery from '#lib/terminal/components/PhotographyGallery.svelte';
@@ -80,6 +91,7 @@
 	let routeNotFound = $derived(data.notFound);
 
 	let input = $state('');
+	let completionMenu = $state<CompletionMenuState>();
 	let cwd = $state(HOME_DIRECTORY);
 	let history = $state<ShellLine[]>([{ kind: 'banner' }]);
 	let activePostPath = $state('');
@@ -108,6 +120,11 @@
 	let previewHighlightedCodeByKey = $state<Record<string, Record<string, string>>>({});
 	let mobileViewportHeight = $state<number>();
 	let mobileKeyboardOpen = $state(false);
+	const COMPLETION_LIST_ID = 'prompt-completions';
+	const commandLog: string[] = [];
+	const postMarkdownByPath: Record<string, string> = {};
+	const sessionStartedAt = Date.now();
+	let commandQueue = Promise.resolve();
 	const mobileShortcuts = ['home', ...helpfulCommands.filter((command) => command !== 'home')];
 
 	let allPhotographs = $derived([
@@ -358,6 +375,7 @@
 	}
 
 	function handlePromptKeydown(event: KeyboardEvent) {
+		if (completionMenu && handleCompletionKeydown(event, completionMenu)) return;
 		if (event.key === 'Tab') {
 			event.preventDefault();
 			void autocompletePrompt();
@@ -381,34 +399,100 @@
 		}
 	}
 
+	/** Returns true when the open completion list consumed the key. */
+	function handleCompletionKeydown(event: KeyboardEvent, menu: CompletionMenuState) {
+		switch (event.key) {
+			case 'Tab':
+				stepCompletion(event.shiftKey ? -1 : 1);
+				break;
+			case 'ArrowDown':
+			case 'ArrowRight':
+				stepCompletion(1);
+				break;
+			case 'ArrowUp':
+			case 'ArrowLeft':
+				stepCompletion(-1);
+				break;
+			case 'Enter':
+				if (menu.activeIndex < 0) {
+					completionMenu = undefined;
+					return false;
+				}
+				acceptCompletion(menu.activeIndex);
+				break;
+			case 'Escape':
+				void setPromptInput(menu.input, menu.cursor);
+				completionMenu = undefined;
+				break;
+			default:
+				return false;
+		}
+		event.preventDefault();
+		return true;
+	}
+
+	function stepCompletion(delta: 1 | -1) {
+		if (!completionMenu) return;
+		const count = completionMenu.candidates.length;
+		const from = completionMenu.activeIndex;
+		const activeIndex = from < 0 ? (delta > 0 ? 0 : count - 1) : (from + delta + count) % count;
+		completionMenu.activeIndex = activeIndex;
+		const next = applyCompletion(completionMenu, completionMenu.candidates[activeIndex], false);
+		void setPromptInput(next.input, next.cursor);
+	}
+
+	function acceptCompletion(index: number) {
+		if (!completionMenu) return;
+		const next = applyCompletion(completionMenu, completionMenu.candidates[index], true);
+		completionMenu = undefined;
+		void setPromptInput(next.input, next.cursor);
+	}
+
+	async function setPromptInput(nextInput: string, nextCursor: number) {
+		input = nextInput;
+		await tick();
+		promptInput?.setSelectionRange(nextCursor, nextCursor);
+	}
+
 	async function autocompletePrompt() {
+		if (completionMenu) {
+			stepCompletion(1);
+			return;
+		}
+
 		const cursor = promptInput?.selectionStart ?? input.length;
 		const completion = completeTerminalInput(input, cursor, cwd, fileSystem);
 		if (!completion) return;
 
-		input = completion.input;
-		await tick();
-		promptInput?.setSelectionRange(completion.cursor, completion.cursor);
-
 		if (completion.candidates.length) {
-			print([completion.candidates.join('  ')], 'muted');
+			completionMenu = { ...(completion as CompletionMenuState), activeIndex: -1 };
 			await scrollToPrompt();
+			return;
 		}
+
+		await setPromptInput(completion.input, completion.cursor);
 	}
 
-	async function submit() {
+	function submit() {
 		const command = input.trim();
 		if (!command) return;
 
-		const commandCwd = cwd;
-		history = [...history, { kind: 'prompt', command, cwd: formatPromptPath(commandCwd) }];
 		input = '';
-		runCommand(command);
+		completionMenu = undefined;
+		// Commands that read posts are async; queueing keeps output in the order they were typed.
+		commandQueue = commandQueue.then(() => executeCommand(command));
+		return commandQueue;
+	}
+
+	async function executeCommand(command: string) {
+		history = [...history, { kind: 'prompt', command, cwd: formatPromptPath(cwd) }];
+		commandLog.push(command);
+		await runCommand(command);
 		await scrollToPrompt();
 	}
 
-	function runCommand(command: string) {
-		const [name, ...args] = command.split(/\s+/);
+	async function runCommand(command: string) {
+		const [name = '', ...args] = tokenizeCommand(command);
 		const target = args.join(' ');
 
 		switch (name) {
@@ -416,6 +500,7 @@
 				resetTerminal([]);
 				return;
 			case 'home':
+			case 'exit':
 				resetTerminal([{ kind: 'banner' }]);
 				return;
 			case 'banner':
@@ -463,7 +548,7 @@
 				void openPhotographyBrowser();
 				return;
 			case 'ls':
-				listDirectory(target || '.');
+				listDirectory(args);
 				return;
 			case 'tree':
 				treeDirectory(target || '.');
@@ -483,9 +568,31 @@
 					print(['usage: theme dark|light'], 'error');
 				}
 				return;
-			default:
-				print([`${name}: command not found`], 'error');
+			default: {
+				const lines = await runUnixCommand(name, args, {
+					cwd,
+					fileSystem,
+					commandLog,
+					startedAt: sessionStartedAt,
+					readPost: readPostMarkdown
+				});
+				if (lines) printLines(lines);
+				else print([`${name}: command not found`], 'error');
+			}
 		}
+	}
+
+	async function readPostMarkdown(post: BlogPostMeta) {
+		const cached = postMarkdownByPath[post.path];
+		if (cached !== undefined) return cached;
+
+		const response = await fetch(
+			`${resolve('/api/blog-preview' as const)}?path=${encodeURIComponent(post.path)}&full`
+		);
+		if (!response.ok) throw new Error('Post unavailable');
+		const { markdown } = (await response.json()) as { markdown: string };
+		postMarkdownByPath[post.path] = markdown;
+		return markdown;
 	}
 
 	function resetTerminal(nextHistory: ShellLine[]) {
@@ -519,7 +626,9 @@
 		print([`cd: ${target}: No such file or directory`], 'error');
 	}
 
-	function listDirectory(target: string) {
+	function listDirectory(args: string[]) {
+		const flags = args.filter((arg) => arg.startsWith('-')).flatMap((arg) => [...arg.slice(1)]);
+		const target = args.find((arg) => !arg.startsWith('-')) ?? '.';
 		const path = normalizePath(target, cwd);
 		const entry = resolveEntry(fileSystem, path);
 
@@ -534,10 +643,7 @@
 			return;
 		}
 
-		const children = listEntries(fileSystem, entry.path);
-		if (children.length) {
-			print(children.map((child) => child.name));
-		}
+		printLines(formatListing(fileSystem, listEntries(fileSystem, entry.path), flags));
 	}
 
 	function treeDirectory(target: string) {
@@ -757,6 +863,10 @@
 		history = [...history, ...lines.map((text) => ({ kind, text }))];
 	}
 
+	function printLines(lines: UnixLine[]) {
+		history = [...history, ...lines.map(({ text, kind = 'output' }) => ({ kind, text }))];
+	}
+
 	async function updateHighlightedCode(tokens: MarkdownTokens, markdown: string, nextTheme: Theme) {
 		const nextHighlightedCode = await highlightMarkdownCode(tokens, nextTheme);
 		if (selectedFullPost?.markdown === markdown && theme === nextTheme) {
@@ -849,6 +959,7 @@
 			bind:scrollbackRef={terminalScrollback}
 			live
 			contained={blogBrowserVisible || photographyBrowserVisible}
+			covered={photographyBrowserVisible ? 'always' : blogBrowserVisible ? 'mobile' : undefined}
 			onpointerdown={focusPrompt}
 		>
 			{#each history as line, index (index)}
@@ -917,11 +1028,26 @@
 							{/each}
 						</div>
 
+						{#if completionMenu}
+							<CompletionMenu
+								id={COMPLETION_LIST_ID}
+								candidates={completionMenu.candidates}
+								activeIndex={completionMenu.activeIndex}
+								onSelect={acceptCompletion}
+							/>
+						{/if}
+
 						<PromptForm
 							cwd={formatPromptPath(cwd)}
 							bind:input
 							bind:inputRef={promptInput}
 							keyboardOpen={mobileKeyboardOpen}
+							completionListId={completionMenu ? COMPLETION_LIST_ID : undefined}
+							activeCompletionId={completionMenu && completionMenu.activeIndex >= 0
+								? `${COMPLETION_LIST_ID}-${completionMenu.activeIndex}`
+								: undefined}
+							onInput={() => (completionMenu = undefined)}
+							onBlur={() => (completionMenu = undefined)}
 							onKeydown={handlePromptKeydown}
 							onSubmit={submit}
 							onAutocomplete={autocompletePrompt}

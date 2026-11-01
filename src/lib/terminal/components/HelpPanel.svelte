@@ -6,17 +6,20 @@
 		start: 'Start',
 		blog: 'Blog',
 		filesystem: 'Filesystem',
+		system: 'System',
 		display: 'Display'
 	};
+
+	const commands = commandCatalog.filter((entry) => !entry.hidden);
 
 	const groups = Object.entries(groupLabels).map(([key, label]) => ({
 		key,
 		label,
-		commands: commandCatalog.filter((entry) => entry.group === key)
+		commands: commands.filter((entry) => entry.group === key)
 	}));
 </script>
 
-<Panel title="help" meta={`${commandCatalog.length} commands`}>
+<Panel title="help" meta={`${commands.length} commands`}>
 	{#each groups as group (group.key)}
 		<PanelSection label={group.label}>
 			<KeyValueList class="help-commands" labelWidth="minmax(190px, 0.42fr)" muted>

@@ -8,7 +8,28 @@ export type CompletionResult = {
 	input: string;
 	cursor: number;
 	candidates: string[];
+	/** Where a candidate replaces the input; set when there are candidates to choose from. */
+	tokenStart?: number;
+	tokenEnd?: number;
+	appendSpace?: boolean;
 };
+
+/** An open completion list. `input` and `cursor` hold what was typed before cycling. */
+export type CompletionMenu = Required<CompletionResult> & { activeIndex: number };
+
+/** Fills a candidate into the typed input. `commit` adds the separator after a finished word. */
+export function applyCompletion(menu: CompletionMenu, candidate: string, commit: boolean) {
+	const before = menu.input.slice(0, menu.tokenStart);
+	const after = menu.input.slice(menu.tokenEnd);
+	const finished = menu.appendSpace || !candidate.endsWith('/');
+	const replacement = `${candidate}${commit && finished && !/^\s/.test(after) ? ' ' : ''}`;
+	return { input: `${before}${replacement}${after}`, cursor: before.length + replacement.length };
+}
+
+/** The part of a candidate worth showing: its last path segment. */
+export function completionLabel(candidate: string) {
+	return candidate.match(/[^/]+\/?$/)?.[0] ?? candidate;
+}
 
 export function completeTerminalInput(
 	input: string,
@@ -34,6 +55,11 @@ export function completeTerminalInput(
 
 	const token = tokenMatch[1];
 	const tokenStart = cursor - token.length;
+	if (commandDefinition.completion === 'command') {
+		const matches = commands.filter((name) => name.startsWith(token));
+		return completeToken(input, tokenStart, cursor, matches, token, true);
+	}
+
 	const lastSlash = token.lastIndexOf('/');
 	const directoryToken = lastSlash >= 0 ? token.slice(0, lastSlash + 1) : '';
 	const fragment = token.slice(lastSlash + 1);
@@ -91,7 +117,10 @@ function completeToken(
 	return {
 		input,
 		cursor,
-		candidates: matches
+		candidates: matches,
+		tokenStart,
+		tokenEnd,
+		appendSpace
 	};
 }
 

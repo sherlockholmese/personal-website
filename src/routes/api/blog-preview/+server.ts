@@ -9,7 +9,10 @@ export const GET: RequestHandler = ({ request, url }) => {
 		return Response.json({ message: 'post not found' }, { status: 404 });
 	}
 
-	const markdown = postPreviewMarkdown(post.markdown);
+	// Terminal commands such as `wc` and `grep` need the whole post, not the preview.
+	const markdown = url.searchParams.has('full')
+		? post.markdown
+		: postPreviewMarkdown(post.markdown);
 	const etag = previewEtag(markdown);
 	const headers = {
 		'cache-control': 'public, max-age=0, must-revalidate',
