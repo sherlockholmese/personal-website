@@ -4,7 +4,7 @@
 
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { pixelMask, renderAscii } from '../ascii-art';
+	import { compactPixelMask, pixelMask, renderAscii } from '../ascii-art';
 
 	let { compact = false, seed }: { compact?: boolean; seed: number } = $props();
 
@@ -12,7 +12,7 @@
 	const trailDuration = 560;
 	const revealDuration = 1400;
 	const scrambleSymbols = '░▒▓█';
-	let rows = $derived(renderAscii(pixelMask, seed, compact ? 1 : 2));
+	let rows = $derived(renderAscii(compact ? compactPixelMask : pixelMask, seed, 2));
 	let width = $derived(Math.max(...rows.map((row) => row.length)));
 	let original = $derived(rows.map((row) => row.padEnd(width)));
 	let originalText = $derived(original.join('\n'));
@@ -82,10 +82,7 @@
 					.map((character, x) => {
 						let influence = 0;
 						for (const point of trail) {
-							const distance = Math.hypot(
-								(x - point.x) * 0.9,
-								(y - point.y) * (compact ? 0.9 : 1.5)
-							);
+							const distance = Math.hypot((x - point.x) * 0.9, (y - point.y) * 1.5);
 							const age = reducedMotion ? 0 : (time - point.time) / trailDuration;
 							influence = Math.max(influence, Math.max(0, 1 - distance / 6.3) * (1 - age));
 						}
@@ -168,8 +165,52 @@
 <pre
 	bind:this={art}
 	class:compact
-	class="welcome-ascii"
+	class="dither-ascii"
 	aria-hidden="true"
 	style={`--ascii-radius: ${revealRadius}%; width: ${width}ch; height: ${rows.length}lh`}
 	onpointermove={movePointer}
 	onpointerleave={leavePointer}>{displayedText ?? originalText}</pre>
+
+<style>
+	.dither-ascii {
+		margin-bottom: var(--space-2);
+		color: var(--info);
+		font-size: 5px;
+		line-height: 1.2;
+		white-space: pre;
+		cursor: default;
+		user-select: none;
+		mask-image: radial-gradient(
+			circle at left bottom,
+			#000 max(0%, calc(var(--ascii-radius) - 8%)),
+			transparent var(--ascii-radius)
+		);
+	}
+
+	.dither-ascii.compact {
+		display: none;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.dither-ascii {
+			mask-image: none;
+		}
+	}
+
+	@media (max-width: 760px) {
+		.dither-ascii:not(.compact) {
+			display: none;
+		}
+
+		.dither-ascii.compact {
+			display: block;
+		}
+	}
+
+	/* Below 358px a 6px cell overflows the window, so cells drop to 5px. */
+	@media (max-width: 357px) {
+		.dither-ascii.compact {
+			font-size: calc(25px / 6);
+		}
+	}
+</style>

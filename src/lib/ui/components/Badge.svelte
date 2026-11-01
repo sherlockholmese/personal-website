@@ -1,6 +1,7 @@
 <!--
 	@component
-	Small bordered label, like the `404` status code. Use `prefix="#"` for tags.
+	Small bordered label, like the `404` status code. Reserve it for exceptions; plain
+	text or `TagList` suits ordinary metadata. Use `prefix="#"` for tags.
 	`variant="solid"` fills with the tone color.
 -->
 <script lang="ts">
@@ -30,30 +31,28 @@
 <style>
 	.ui-badge {
 		display: inline-flex;
-		align-items: center;
 		min-height: 22px;
-		padding: 1px 5px;
+		align-items: center;
+		padding: 0 var(--space-1);
 		border: 1px solid var(--ui-tone);
 		color: var(--ui-tone);
-		font-size: 13px;
+		font-size: var(--text-caption);
 		font-weight: 700;
 		line-height: 1.1;
-		white-space: nowrap;
+		overflow-wrap: anywhere;
 	}
 
 	.ui-badge-solid {
 		background: var(--ui-tone);
-		color: var(--bg);
+		color: var(--surface);
 	}
 
 	.ui-badge-text {
 		min-height: 0;
 		padding: 0;
 		border: 0;
+		font-size: inherit;
 		font-weight: 400;
-	}
-
-	.ui-badge-prefix {
-		opacity: 0.7;
+		line-height: inherit;
 	}
 </style>

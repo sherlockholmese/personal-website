@@ -20,40 +20,35 @@
 </script>
 
 <pre
-	class={['ui-output', `ui-output-${kind}`, className]}
-	role={kind === 'error'
-		? 'alert'
-		: undefined}>{#if children}{@render children()}{:else}{text}{/if}</pre>
+	class={[
+		'ui-output',
+		`ui-output-${kind}`,
+		className
+	]}>{#if children}{@render children()}{:else}{text}{/if}</pre>
 
 <style>
 	.ui-output {
 		margin: 0;
-		color: var(--tx);
-		font-size: 15px;
+		color: var(--text);
+		font-size: var(--text-body);
 		line-height: 1.34;
 		white-space: pre-wrap;
 		overflow-wrap: anywhere;
 	}
 
 	.ui-output-success {
-		color: var(--green);
+		color: var(--success);
 	}
 
 	.ui-output-error {
-		color: var(--red);
+		color: var(--danger);
 	}
 
 	.ui-output-warning {
-		color: var(--orange);
+		color: var(--warning);
 	}
 
 	.ui-output-muted {
-		color: var(--tx-2);
-	}
-
-	@media (max-width: 760px) {
-		.ui-output {
-			font-size: 16px;
-		}
+		color: var(--text-muted);
 	}
 </style>

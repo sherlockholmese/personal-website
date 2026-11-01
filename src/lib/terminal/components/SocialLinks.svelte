@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { Button, Link, LinkList, Text } from '#lib/ui/index.ts';
 	import {
 		claimTurnstileChallenge,
 		loadTurnstile,
@@ -178,55 +179,33 @@
 	});
 </script>
 
-<div class="my-[4px] mb-[14px] grid gap-[4px]">
-	<div class="leading-[1.45] font-bold text-[var(--green)]">socials</div>
-	<a
-		href={githubUrl}
-		target="_blank"
-		rel="external noreferrer"
-		class="grid grid-cols-[10ch_minmax(0,1fr)] gap-[10px] leading-[1.45] text-[var(--cyan)] no-underline hover:text-[var(--yellow)] max-[760px]:grid-cols-1 max-[760px]:gap-0 max-[760px]:py-[5px]"
-	>
-		<span>github</span>
-		<strong class="min-w-0 font-normal [overflow-wrap:anywhere]">{githubUrl}</strong>
-	</a>
-	<div
-		class="grid grid-cols-[10ch_minmax(0,1fr)] gap-[10px] leading-[1.45] text-[var(--cyan)] no-underline max-[760px]:grid-cols-1 max-[760px]:gap-0 max-[760px]:py-[5px]"
-	>
-		<span>email</span>
-		<div class="min-w-0">
-			{#if status === 'revealed'}
-				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-				<a
-					href={`mailto:${email}`}
-					class="font-normal [overflow-wrap:anywhere] text-[var(--cyan)] no-underline hover:text-[var(--yellow)]"
-				>
-					{email}
-				</a>
-			{:else if status === 'idle'}
-				<button
-					type="button"
-					onclick={startReveal}
-					class="cursor-pointer bg-transparent p-0 text-left font-normal text-[var(--cyan)] underline decoration-[color-mix(in_srgb,var(--cyan)_65%,transparent)] underline-offset-[3px] hover:text-[var(--yellow)] focus-visible:text-[var(--yellow)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tx)]"
-				>
-					are you human?
-				</button>
-			{:else}
-				{#if status === 'loading' || status === 'ready' || status === 'verifying'}
-					<div bind:this={challengeContainer} class="min-h-[65px] w-full max-w-[300px]"></div>
-				{/if}
-				{#if statusMessage}
-					<div class="mt-[4px] text-[var(--tx-2)]" role="status">{statusMessage}</div>
-				{/if}
-				{#if status === 'error' || status === 'rate-limited'}
-					<button
-						type="button"
-						onclick={startReveal}
-						class="mt-[4px] cursor-pointer bg-transparent p-0 text-left text-[var(--cyan)] underline underline-offset-[3px] hover:text-[var(--yellow)] focus-visible:text-[var(--yellow)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tx)]"
-					>
-						retry
-					</button>
-				{/if}
+<LinkList
+	title="socials"
+	items={[{ label: 'github', href: githubUrl, external: true }, { label: 'email' }]}
+>
+	{#snippet row()}
+		{#if status === 'revealed'}
+			<Link href={`mailto:${email}`} variant="plain">{email}</Link>
+		{:else if status === 'idle'}
+			<Button variant="ghost" onclick={startReveal}>are you human?</Button>
+		{:else}
+			{#if status === 'loading' || status === 'ready' || status === 'verifying'}
+				<div bind:this={challengeContainer} class="challenge"></div>
 			{/if}
-		</div>
-	</div>
-</div>
+			{#if statusMessage}
+				<Text as="div" tone="muted" role="status">{statusMessage}</Text>
+			{/if}
+			{#if status === 'error' || status === 'rate-limited'}
+				<Button variant="ghost" onclick={startReveal}>retry</Button>
+			{/if}
+		{/if}
+	{/snippet}
+</LinkList>
+
+<style>
+	.challenge {
+		width: 100%;
+		max-width: 300px;
+		min-height: 65px;
+	}
+</style>

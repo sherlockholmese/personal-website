@@ -37,32 +37,37 @@
 <style>
 	.ui-command-chip {
 		display: inline-flex;
+		min-height: var(--control-chip);
 		align-items: center;
-		padding: 1px 5px;
+		padding: 0 var(--space-1);
 		border: 0;
-		background: var(--yellow);
-		color: var(--bg);
-		font-size: 13px;
+		background: var(--accent);
+		color: var(--on-accent);
+		font-size: var(--text-caption);
 		line-height: 1.45;
 		text-decoration: none;
-		cursor: pointer;
-		touch-action: manipulation;
 	}
 
-	.ui-command-chip:hover {
-		background: var(--cyan);
+	.ui-command-chip:active {
+		background: var(--accent-hover);
+		transition-duration: 0ms;
 	}
 
-	.ui-command-chip:focus-visible {
-		outline: 2px solid var(--tx);
-		outline-offset: 2px;
+	@media (hover: hover) {
+		.ui-command-chip:hover:not(:active) {
+			background: var(--accent-hover);
+		}
 	}
 
-	@media (max-width: 760px) {
+	@media (prefers-reduced-motion: no-preference) {
 		.ui-command-chip {
-			min-height: 40px;
-			padding-inline: 10px;
-			font-size: 14px;
+			transition: background-color var(--motion-press) var(--ease-standard);
+		}
+	}
+
+	@media (max-width: 760px), (pointer: coarse) {
+		.ui-command-chip {
+			padding-inline: var(--space-2);
 		}
 	}
 </style>

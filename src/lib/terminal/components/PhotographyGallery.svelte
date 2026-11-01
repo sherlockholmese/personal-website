@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { findPhotograph, type Photograph } from '#lib/photography.ts';
+	import { Button, EmptyState, Heading } from '#lib/ui/index.ts';
 	import { centeredScrollLeft } from '../geometry';
 	import { planeExit, prefersReducedMotion } from '../motion';
 	import PhotographyTile from './PhotographyTile.svelte';
@@ -45,7 +46,7 @@
 	let nextPhotoShown = $state(false);
 	// Fades with scroll progress toward revealing the next photograph.
 	let hintOpacity = $state(1);
-	let galleryHint = $state<HTMLButtonElement>();
+	let galleryHint = $state<HTMLElement>();
 	let stripHovered = false;
 	let stripPointer: { x: number; y: number } | undefined;
 	let stripHoveredPhotoId = '';
@@ -445,19 +446,17 @@
 
 <section class="photography-gallery" aria-labelledby="photography-heading" out:planeExit>
 	<header class="photography-gallery-header">
-		<h1 id="photography-heading">Photography (?)</h1>
+		<Heading level={1} id="photography-heading">Photography (?)</Heading>
 	</header>
 	<div bind:this={galleryStage} class="photography-gallery-stage" onscroll={handleStageScroll}>
 		{#if unavailable}
-			<p class="photography-gallery-empty" role="status">
-				Photographs are unavailable right now. <button
-					type="button"
-					class="photography-retry"
-					onclick={() => location.reload()}>Try again</button
-				>
-			</p>
+			<EmptyState message="Photographs are unavailable right now." align="center">
+				{#snippet actions()}
+					<Button variant="ghost" onclick={() => location.reload()}>Try again</Button>
+				{/snippet}
+			</EmptyState>
 		{:else if !orderedPhotographs.length}
-			<p class="photography-gallery-empty">No photographs yet.</p>
+			<EmptyState message="No photographs yet." align="center" />
 		{/if}
 		{#if orderedPhotographs.length}
 			<div class="photography-gallery-track">
@@ -481,19 +480,24 @@
 		{/if}
 	</div>
 	{#if orderedPhotographs.length > 1}
-		<button
-			type="button"
-			bind:this={galleryHint}
-			class="photography-gallery-hint"
-			class:photography-gallery-hint-hidden={!stageOverflows || nextPhotoShown}
-			style:opacity={hintOpacity}
+		<Button
+			bind:ref={galleryHint}
+			variant="overlay"
+			size="sm"
+			class={[
+				'photography-gallery-hint',
+				(!stageOverflows || nextPhotoShown) && 'photography-gallery-hint-hidden'
+			]
+				.filter(Boolean)
+				.join(' ')}
+			style={`opacity: ${hintOpacity}`}
 			aria-label="Next photograph"
 			onclick={showNextPhoto}
 		>
 			<span class="photography-gallery-hint-touch">swipe</span><span
 				class="photography-gallery-hint-pointer">scroll</span
 			> →
-		</button>
+		</Button>
 		<nav
 			bind:this={galleryStrip}
 			class="photography-gallery-strip"
@@ -532,3 +536,185 @@
 </section>
 
 <PhotographyPhotoViewer photograph={selectedPhoto} onClose={closePhoto} />
+
+<style>
+	/* A fixed header, a horizontal stage of photographs, and a preview strip that scrubs it. */
+	.photography-gallery {
+		--content-inline-padding: var(--space-4);
+		--photography-gap: var(--space-4);
+		--photography-stage-bottom: var(--space-4);
+		position: absolute;
+		inset: 0;
+		z-index: var(--layer-panel);
+		display: grid;
+		min-height: 0;
+		grid-template-rows: auto minmax(0, 1fr) auto;
+		overflow: hidden;
+		background: var(--surface);
+	}
+
+	.photography-gallery-header {
+		grid-row-start: 1;
+		/* Align the title with the photo edges rather than the padded box. */
+		width: calc(100% - 2 * var(--content-inline-padding));
+		margin: 0 auto var(--space-4);
+		padding-top: var(--space-4);
+		flex: none;
+	}
+
+	.photography-gallery-header :global(.ui-heading) {
+		margin: 0;
+	}
+
+	.photography-gallery-stage {
+		grid-row-start: 2;
+		grid-column-start: 1;
+		min-height: 0;
+		padding-bottom: var(--photography-stage-bottom);
+		overflow: auto hidden;
+		container: photography-stage / size;
+		overscroll-behavior-x: contain;
+		scrollbar-width: none;
+	}
+
+	.photography-gallery-track {
+		display: flex;
+		width: max-content;
+		height: 100%;
+		gap: var(--photography-gap);
+		padding-inline: var(--content-inline-padding);
+	}
+
+	/* One row by default: rows flatten and cells keep their order through flex order. */
+	.photography-gallery-rows,
+	.photography-gallery-row {
+		display: contents;
+	}
+
+	/* Explicit stage-relative heights keep each photograph's intrinsic width correct. */
+	.photography-gallery-cell {
+		height: 100cqh;
+		flex: none;
+	}
+
+	/* Two continuous rows on tall narrow stages; the header photograph spans both. */
+	@media (max-width: 760px) {
+		@container photography-stage (min-height: 480px) {
+			.photography-gallery-rows {
+				display: flex;
+				flex-direction: column;
+				gap: var(--photography-gap);
+			}
+
+			.photography-gallery-row {
+				display: flex;
+				gap: var(--photography-gap);
+			}
+
+			.photography-gallery-row .photography-gallery-cell {
+				height: calc((100cqh - var(--photography-gap)) / 2);
+			}
+		}
+	}
+
+	/* Overlays the stage's bottom-right corner, sharing its grid cell rather than scrolling with it. */
+	:global(.ui-button.photography-gallery-hint) {
+		grid-row-start: 2;
+		grid-column-start: 1;
+		align-self: end;
+		justify-self: end;
+		margin: 0 calc(var(--content-inline-padding) + var(--space-2))
+			calc(var(--photography-stage-bottom) + var(--space-2)) 0;
+	}
+
+	/* Opacity follows scroll progress inline; once hidden the hint also leaves the tab order. */
+	:global(.ui-button.photography-gallery-hint-hidden) {
+		visibility: hidden;
+		pointer-events: none;
+	}
+
+	.photography-gallery-hint-touch {
+		display: none;
+	}
+
+	@media (pointer: coarse) {
+		.photography-gallery-hint-touch {
+			display: inline;
+		}
+
+		.photography-gallery-hint-pointer {
+			display: none;
+		}
+	}
+
+	.photography-gallery-strip {
+		display: flex;
+		flex: none;
+		grid-row-start: 3;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--content-inline-padding)
+			max(var(--space-2), env(safe-area-inset-bottom));
+		overflow: auto hidden;
+		border-top: 1px solid var(--border);
+		scrollbar-width: none;
+	}
+
+	.photography-gallery-thumbnail {
+		display: block;
+		height: 48px;
+		flex: none;
+		padding: 0;
+		border: 0;
+		background: var(--surface-raised);
+		opacity: 0.5;
+		outline: 1px solid transparent;
+		outline-offset: var(--focus-offset);
+	}
+
+	.photography-gallery-thumbnail:hover,
+	.photography-gallery-thumbnail:focus-visible,
+	.photography-gallery-thumbnail-active {
+		opacity: 1;
+	}
+
+	.photography-gallery-thumbnail-active {
+		outline-color: var(--accent);
+	}
+
+	.photography-gallery-thumbnail:focus-visible {
+		outline: var(--focus-width) solid var(--focus);
+	}
+
+	.photography-gallery-thumbnail img {
+		display: block;
+		width: auto;
+		height: 100%;
+		aspect-ratio: 3 / 2;
+		object-fit: cover;
+	}
+
+	@media (max-width: 760px) {
+		.photography-gallery {
+			--content-inline-padding: var(--space-2);
+			--photography-gap: var(--space-2);
+			--photography-stage-bottom: var(--space-3);
+		}
+
+		.photography-gallery-header {
+			margin-bottom: var(--space-3);
+			padding-top: var(--space-3);
+		}
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.photography-gallery {
+			animation: motion-rise var(--motion-normal) var(--ease-enter);
+		}
+
+		.photography-gallery-thumbnail {
+			transition:
+				outline-color var(--motion-fast) var(--ease-standard),
+				opacity var(--motion-fast) var(--ease-standard);
+		}
+	}
+</style>

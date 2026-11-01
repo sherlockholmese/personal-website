@@ -5,11 +5,14 @@
 	- `variant="inline"` (default): borderless input with an accent caret, like the
 	  prompt and blog browser query field. Gains a visible box on mobile for touch.
 	- `variant="boxed"`: always bordered, for forms.
+	- `variant="bare"`: never boxed, for an input that sits inside other chrome (the
+	  shell prompt). The caret is its focus indicator.
 
-	`prefix` renders a leading glyph such as `❯` or `/`. `label` sits to the left on
-	desktop and stacks above on mobile.
+	`prefix` renders a leading glyph such as `❯` or `/`, and `actions` renders controls
+	after the input. `label` sits to the left on desktop and stacks above on mobile.
 -->
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { HTMLInputAttributes } from 'svelte/elements';
 
 	let {
@@ -24,6 +27,7 @@
 		type = 'text',
 		id: providedId,
 		class: className = '',
+		actions,
 		...rest
 	}: {
 		value?: string;
@@ -34,10 +38,11 @@
 		prefix?: string;
 		hint?: string;
 		error?: string;
-		variant?: 'inline' | 'boxed';
+		variant?: 'inline' | 'boxed' | 'bare';
 		type?: 'text' | 'search' | 'email' | 'url' | 'password' | 'tel' | 'number';
 		id?: string;
 		class?: string;
+		actions?: Snippet;
 	} & Omit<HTMLInputAttributes, 'value' | 'type' | 'prefix'> = $props();
 
 	const generatedId = $props.id();
@@ -63,6 +68,7 @@
 			spellcheck={false}
 			{...rest}
 		/>
+		{@render actions?.()}
 	</div>
 	{#if hint}<span id={`${id}-hint`} class="ui-field-hint">{hint}</span>{/if}
 	{#if error}<span id={`${id}-error`} class="ui-field-error" role="alert">{error}</span>{/if}
@@ -73,12 +79,16 @@
 		display: grid;
 		grid-template-columns: auto minmax(0, 1fr);
 		align-items: center;
-		gap: 4px 10px;
+		gap: var(--space-1) var(--space-2);
 		min-width: 0;
 	}
 
+	.ui-field-bare {
+		flex: 1;
+	}
+
 	.ui-field-label {
-		color: var(--yellow);
+		color: var(--text-muted);
 	}
 
 	.ui-field-label.ui-visually-hidden + .ui-field-control,
@@ -90,13 +100,13 @@
 	.ui-field-control {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: var(--space-2);
 		min-width: 0;
 	}
 
 	.ui-field-prefix {
 		flex: none;
-		color: var(--yellow);
+		color: var(--accent);
 	}
 
 	.ui-field-input {
@@ -105,54 +115,49 @@
 		padding: 0;
 		border: 0;
 		background: transparent;
-		color: var(--tx);
-		caret-color: var(--yellow);
+		color: var(--text);
+		caret-color: var(--accent);
 		outline: none;
 		line-height: 1.45;
 	}
 
 	.ui-field-input::placeholder {
-		color: var(--tx-2);
+		color: var(--text-muted);
+		opacity: 1;
 	}
 
 	.ui-field-boxed .ui-field-control {
-		min-height: 32px;
-		padding: 0 8px;
-		border: 1px solid var(--border);
-		box-shadow: inset 0 -1px 0 var(--ui-2);
+		min-height: var(--control-md);
+		padding: 0 var(--space-2);
+		border: 1px solid var(--border-control);
 	}
 
-	.ui-field-control:focus-within {
-		box-shadow: inset 0 -1px 0 var(--yellow);
+	.ui-field-inline .ui-field-control:focus-within {
+		box-shadow: inset 0 -1px 0 var(--accent);
 	}
 
 	.ui-field-boxed .ui-field-control:focus-within {
-		border-color: var(--yellow);
-		box-shadow: 0 0 0 1px var(--yellow);
+		border-color: var(--accent);
+		box-shadow: 0 0 0 1px var(--accent);
+	}
+
+	.ui-field-bare .ui-field-control {
+		min-height: var(--target-min);
 	}
 
 	.ui-field-hint {
-		color: var(--tx-2);
-		font-size: 13px;
+		color: var(--text-muted);
+		font-size: var(--text-caption);
 	}
 
 	.ui-field-error {
-		color: var(--red);
-		font-size: 13px;
+		color: var(--danger);
+		font-size: var(--text-caption);
 	}
 
 	.ui-field-invalid .ui-field-control {
-		border-color: var(--red);
-		box-shadow: inset 0 -1px 0 var(--red);
-	}
-
-	.ui-visually-hidden {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip-path: inset(50%);
-		white-space: nowrap;
+		border-color: var(--danger);
+		box-shadow: inset 0 -1px 0 var(--danger);
 	}
 
 	@media (max-width: 760px) {
@@ -160,20 +165,19 @@
 			grid-template-columns: minmax(0, 1fr);
 		}
 
-		.ui-field-control {
-			min-height: 44px;
-			padding: 0 8px;
-			border: 1px solid var(--border);
-			box-shadow: inset 0 -1px 0 var(--ui-2);
+		.ui-field-inline .ui-field-control {
+			min-height: var(--target-min);
+			padding: 0 var(--space-2);
+			border: 1px solid var(--border-control);
 		}
 
-		.ui-field-control:focus-within {
-			border-color: var(--yellow);
-			box-shadow: 0 0 0 1px var(--yellow);
+		.ui-field-inline .ui-field-control:focus-within {
+			border-color: var(--accent);
+			box-shadow: 0 0 0 1px var(--accent);
 		}
 
 		.ui-field-input {
-			font-size: 16px;
+			font-size: var(--text-body);
 		}
 	}
 </style>

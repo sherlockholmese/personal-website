@@ -1,10 +1,7 @@
 <!--
 	@component
-	Theme scope for UI components. Every library component reads its colors from the
-	Flexoki tokens declared on `.workspace`, so render them inside this wrapper (or any
-	element that already carries the `workspace` class, such as `TerminalPage`).
-
-	`theme` forces a palette; leave it unset to follow the site-wide `data-theme`.
+	Theme scope. Color tokens live on `:root` and follow the site-wide `data-theme`, so
+	this wrapper is only needed to force a palette for a subtree with `theme`.
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
@@ -25,17 +22,6 @@
 	} & HTMLAttributes<HTMLElement> = $props();
 </script>
 
-<svelte:element
-	this={as}
-	class={['workspace ui-workspace', theme === 'light' && 'light', className]}
-	{...rest}
->
+<svelte:element this={as} class={['workspace', theme, className]} {...rest}>
 	{@render children()}
 </svelte:element>
-
-<style>
-	.ui-workspace {
-		background: var(--bg);
-		color: var(--tx);
-	}
-</style>

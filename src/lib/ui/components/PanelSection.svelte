@@ -38,8 +38,8 @@
 	.ui-panel-section {
 		display: grid;
 		grid-template-columns: var(--ui-label-width) minmax(0, 1fr);
-		gap: 12px;
-		padding: 10px 8px;
+		gap: var(--space-3);
+		padding: var(--space-2) var(--ui-panel-inset, var(--space-2));
 		border-bottom: 1px solid var(--border);
 	}
 
@@ -53,22 +53,22 @@
 
 	.ui-panel-section-label {
 		margin: 0;
-		color: var(--cyan);
-		font-size: 14px;
+		color: var(--info);
+		font-size: var(--text-body);
+		font-weight: 400;
 		line-height: 1.45;
 	}
 
 	.ui-panel-section-body {
 		display: grid;
 		min-width: 0;
-		gap: 6px;
+		gap: var(--space-1);
 	}
 
 	@media (max-width: 760px) {
 		.ui-panel-section {
 			grid-template-columns: minmax(0, 1fr);
-			gap: 6px;
-			padding: 10px 12px;
+			gap: var(--space-1);
 		}
 	}
 </style>

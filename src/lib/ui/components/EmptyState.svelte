@@ -29,9 +29,9 @@
 <style>
 	.ui-empty {
 		display: grid;
-		gap: 6px;
-		padding: 16px 8px;
-		color: var(--tx-2);
+		gap: var(--space-1);
+		padding: var(--space-4) var(--space-2);
+		color: var(--text-muted);
 		line-height: 1.45;
 	}
 
@@ -41,14 +41,14 @@
 	}
 
 	.ui-empty-title {
-		color: var(--tx);
+		color: var(--text);
 		font-weight: 700;
 	}
 
 	.ui-empty-actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
-		margin-top: 4px;
+		gap: var(--space-2);
+		margin-top: var(--space-1);
 	}
 </style>

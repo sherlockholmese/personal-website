@@ -1,82 +1,71 @@
 <!--
 	@component
 	Label/value rows with a fixed accent label column, as in the welcome summary and post
-	metadata. Stacks on mobile. Supply `items`, or a `value` snippet to render rich values.
+	metadata. Rows stack on mobile, or always with `stacked`.
+
+	Supply plain `items`, or `KeyValueRow` children for rich values.
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { KeyValueItem } from '../types';
+	import KeyValueRow from './KeyValueRow.svelte';
 
 	let {
-		items,
+		items = [],
 		labelWidth = '8ch',
 		muted = false,
+		stacked = false,
 		class: className = '',
-		value: valueSnippet
+		children
 	}: {
-		items: readonly KeyValueItem[];
-		/** Any CSS length for the label column. */
+		items?: readonly KeyValueItem[];
+		/** Any CSS grid track size for the label column. */
 		labelWidth?: string;
 		/** Use the secondary text color for values. */
 		muted?: boolean;
+		/** Keep labels above values at every width. */
+		stacked?: boolean;
 		class?: string;
-		value?: Snippet<[KeyValueItem]>;
+		children?: Snippet;
 	} = $props();
 </script>
 
-<dl class={['ui-kv', className]} class:ui-kv-muted={muted} style:--ui-label-width={labelWidth}>
-	{#each items as item (item.label)}
-		<div class="ui-kv-row">
-			<dt>{item.label}</dt>
-			<dd>
-				{#if valueSnippet}{@render valueSnippet(item)}{:else}{item.value}{/if}
-			</dd>
-		</div>
+<dl
+	class={['ui-kv', className]}
+	class:ui-kv-muted={muted}
+	class:ui-kv-stacked={stacked}
+	style:--ui-label-width={labelWidth}
+>
+	{#each items as item, index (`${item.label}:${index}`)}
+		<KeyValueRow label={item.label}>{item.value}</KeyValueRow>
 	{/each}
+	{@render children?.()}
 </dl>
 
 <style>
 	.ui-kv {
 		display: grid;
-		gap: 3px;
-		margin: 0 0 12px;
+		gap: var(--space-1);
+		margin: 0 0 var(--space-3);
+		color: var(--text);
 	}
 
-	.ui-kv-row {
-		display: grid;
-		grid-template-columns: var(--ui-label-width) minmax(0, 1fr);
-		align-items: start;
-		gap: 10px;
-		line-height: 1.45;
+	.ui-kv-muted {
+		color: var(--text-muted);
 	}
 
-	dt {
-		color: var(--yellow);
-		font-weight: 700;
-	}
-
-	dd {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-		min-width: 0;
-		margin: 0;
-		color: var(--tx);
-		overflow-wrap: anywhere;
-	}
-
-	.ui-kv-muted dd {
-		color: var(--tx-2);
+	.ui-kv-stacked {
+		gap: var(--space-4);
+		--ui-kv-columns: minmax(0, 1fr);
+		--ui-kv-row-gap: var(--space-1);
+		--ui-kv-label: var(--text);
 	}
 
 	@media (max-width: 760px) {
 		.ui-kv {
-			gap: 6px;
-		}
-
-		.ui-kv-row {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 1px;
+			gap: var(--space-2);
+			--ui-kv-columns: minmax(0, 1fr);
+			--ui-kv-row-gap: var(--space-half);
 		}
 	}
 </style>

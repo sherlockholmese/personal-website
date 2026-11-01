@@ -34,7 +34,7 @@
 		display: inline-flex;
 		align-items: baseline;
 		gap: 1ch;
-		color: var(--tx-2);
+		color: var(--text-muted);
 	}
 
 	.ui-spinner-glyph {

@@ -6,6 +6,7 @@
 		Button,
 		Callout,
 		Checkbox,
+		Chevron,
 		CodeBlock,
 		CommandChip,
 		DataTable,
@@ -17,6 +18,8 @@
 		InlineCode,
 		Kbd,
 		KeyValueList,
+		KeyValueRow,
+		Lightbox,
 		Link,
 		LinkList,
 		Notice,
@@ -29,11 +32,14 @@
 		Prose,
 		Select,
 		Spinner,
+		TagList,
 		Tabs,
 		TerminalPage,
+		TerminalViewport,
 		Text,
 		TextField,
 		type DataTableColumn,
+		type LightboxImage,
 		type Theme,
 		type Tone
 	} from '#lib/ui/index.ts';
@@ -46,21 +52,13 @@
 	let subscribed = $state(true);
 	let tab = $state('posts');
 	let dialogOpen = $state(false);
+	let lightboxImage = $state<LightboxImage>();
+	let saving = $state(false);
 	let noticeOpen = $state(false);
 	let lastCommand = $state('');
 	let progress = $state(64);
 
-	const tones: Tone[] = [
-		'neutral',
-		'muted',
-		'accent',
-		'info',
-		'success',
-		'warning',
-		'danger',
-		'highlight',
-		'purple'
-	];
+	const tones: Tone[] = ['neutral', 'muted', 'accent', 'info', 'success', 'warning', 'danger'];
 
 	const projects: Project[] = [
 		{
@@ -105,7 +103,7 @@ export function greet(name: string) {
 	{/snippet}
 
 	<Prompt command="ls ~/src/lib/ui" />
-	<OutputLine kind="muted" text="34 components. Import them from '#lib/ui/index.ts'." />
+	<OutputLine kind="muted" text="Import components from '#lib/ui/index.ts'." />
 
 	<Divider label="layout" />
 	<Panel title="Panel" meta="ruled">
@@ -123,6 +121,12 @@ export function greet(name: string) {
 	<Divider />
 	<Divider dashed />
 	<Divider strong />
+
+	<div class="h-[96px] border border-[var(--border)]">
+		<TerminalViewport>
+			<OutputLine text="TerminalViewport: the scrolling window body." />
+		</TerminalViewport>
+	</div>
 
 	<Divider label="typography" />
 	<Heading level={1}>Heading 1</Heading>
@@ -173,7 +177,9 @@ export function greet(name: string) {
 		<Button variant="danger">danger</Button>
 		<Button variant="success">success</Button>
 		<Button size="sm">small</Button>
+		<Button loading={saving} onclick={() => (saving = !saving)}>stable width</Button>
 		<Button loading>loading</Button>
+		<Button variant="overlay">overlay</Button>
 		<Button disabled>disabled</Button>
 		<Button href={resolve('/')}>link</Button>
 	</div>
@@ -220,12 +226,12 @@ export function greet(name: string) {
 			{ label: 'stack', value: 'C/C++, Rust, TypeScript, Python' }
 		]}
 	/>
-	<KeyValueList items={[{ label: 'tags', value: 'ctf,pwn,rust' }]}>
-		{#snippet value(item)}
-			{#each item.value.split(',') as tag (tag)}
-				<Badge prefix="#" variant="text" tone="info">{tag}</Badge>
-			{/each}
-		{/snippet}
+	<KeyValueList labelWidth="12ch">
+		<KeyValueRow label="tags"><TagList tags={['ctf', 'pwn', 'rust']} /></KeyValueRow>
+		<KeyValueRow>
+			{#snippet term()}<InlineCode>cat [file]</InlineCode>{/snippet}
+			Prints a post.
+		</KeyValueRow>
 	</KeyValueList>
 	<Panel title="projects" meta={`${projects.length} repos`}>
 		<DataTable
@@ -271,21 +277,41 @@ export function greet(name: string) {
 			<Button size="sm" onclick={() => (progress = Math.min(100, progress + 10))}>+10</Button>
 		</div>
 	</div>
+	<div class="my-[8px] flex items-center gap-[8px]">
+		<Chevron />
+		<Chevron open />
+		<Chevron direction="right" />
+	</div>
 	<Details summary="Storage details">
 		<Text tone="muted">Disclosure content.</Text>
 	</Details>
 	<div class="my-[12px] flex flex-wrap gap-[8px]">
 		<Button onclick={() => (dialogOpen = true)}>open dialog</Button>
 		<Button onclick={() => (noticeOpen = true)}>show notice</Button>
+		<Button onclick={() => (lightboxImage = { src: '/pfp.jpg', alt: 'Profile photograph' })}>
+			open lightbox
+		</Button>
 	</div>
 
 	<Dialog bind:open={dialogOpen} title="confirm" size="sm">
 		<Text>Discard this draft? This cannot be undone.</Text>
+		<Select
+			label="sort"
+			bind:value={sort}
+			options={[
+				{ value: 'newest', label: 'newest' },
+				{ value: 'oldest', label: 'oldest' },
+				{ value: 'title', label: 'title' }
+			]}
+		/>
 		{#snippet footer()}
 			<Button onclick={() => (dialogOpen = false)}>cancel</Button>
 			<Button variant="danger" onclick={() => (dialogOpen = false)}>discard</Button>
 		{/snippet}
 	</Dialog>
+	<Lightbox image={lightboxImage} label="Example image" onClose={() => (lightboxImage = undefined)}>
+		{#snippet footer()}Lightbox footer{/snippet}
+	</Lightbox>
 	<Notice bind:open={noticeOpen} title="Notice">
 		<p>Floating notices share the cookie banner styling.</p>
 	</Notice>

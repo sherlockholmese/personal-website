@@ -1,38 +1,59 @@
 <!--
 	@component
-	Labelled link listing in the style of the `socials` output: an optional green title,
-	then `label  value` rows in cyan that turn accent on hover.
+	Labelled link listing in the style of the `socials` output: an optional title, then
+	`label  value` rows. `quiet` uses neutral text for scannable lists such as latest posts.
+
+	An item without `href` renders through the `row` snippet, for a non-link value in the
+	same grid. An item with `value: ''` shows only its label.
 -->
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import type { LinkItem } from '../types';
 
 	let {
 		title,
 		items,
 		labelWidth = '10ch',
-		class: className = ''
+		quiet = false,
+		class: className = '',
+		row
 	}: {
 		title?: string;
 		items: readonly LinkItem[];
 		labelWidth?: string;
+		quiet?: boolean;
 		class?: string;
+		row?: Snippet<[LinkItem]>;
 	} = $props();
 </script>
 
-<div class={['ui-link-list', className]} style:--ui-label-width={labelWidth}>
+<div
+	class={['ui-link-list', className]}
+	class:ui-link-list-quiet={quiet}
+	style:--ui-label-width={labelWidth}
+>
 	{#if title}<div class="ui-link-list-title">{title}</div>{/if}
 	<ul>
-		{#each items as item (item.href)}
+		{#each items as item, index (`${item.label}:${index}`)}
+			{@const value = item.value ?? item.href}
 			<li>
-				<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-				<a
-					href={item.href}
-					target={item.external ? '_blank' : undefined}
-					rel={item.external ? 'external noreferrer' : undefined}
-				>
-					<span>{item.label}</span>
-					<span class="ui-link-list-value">{item.value ?? item.href}</span>
-				</a>
+				{#if item.href}
+					<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+					<a
+						class="ui-link-list-row"
+						href={item.href}
+						target={item.external ? '_blank' : undefined}
+						rel={item.external ? 'external noreferrer' : undefined}
+					>
+						<span class="ui-link-list-label">{item.label}</span>
+						{#if value}<span class="ui-link-list-value">{value}</span>{/if}
+					</a>
+				{:else}
+					<div class="ui-link-list-row">
+						<span class="ui-link-list-label">{item.label}</span>
+						<div class="ui-link-list-value">{@render row?.(item)}</div>
+					</div>
+				{/if}
 			</li>
 		{/each}
 	</ul>
@@ -41,41 +62,44 @@
 <style>
 	.ui-link-list {
 		display: grid;
-		gap: 4px;
-		margin: 4px 0 14px;
+		gap: var(--space-1);
+		margin-block: var(--space-1) var(--space-3);
 	}
 
 	.ui-link-list-title {
-		color: var(--green);
+		color: var(--heading-3);
 		font-weight: 700;
 		line-height: 1.45;
+		overflow-wrap: anywhere;
 	}
 
 	ul {
 		display: grid;
-		gap: 4px;
+		gap: var(--space-1);
 		margin: 0;
 		padding: 0;
 		list-style: none;
 	}
 
-	a {
+	.ui-link-list-row {
 		display: grid;
+		min-height: var(--target-min);
 		grid-template-columns: var(--ui-label-width) minmax(0, 1fr);
-		gap: 10px;
-		color: var(--cyan);
+		align-content: center;
+		gap: 0 var(--space-3);
+		color: var(--link);
 		line-height: 1.45;
 		text-decoration: none;
 	}
 
-	a:hover,
-	a:focus-visible {
-		color: var(--yellow);
+	a.ui-link-list-row:not(:has(.ui-link-list-value)) {
+		display: flex;
+		align-items: center;
 	}
 
-	a:focus-visible {
-		outline: 2px solid var(--tx);
-		outline-offset: 2px;
+	a.ui-link-list-row:hover,
+	a.ui-link-list-row:focus-visible {
+		color: var(--accent);
 	}
 
 	.ui-link-list-value {
@@ -83,11 +107,17 @@
 		overflow-wrap: anywhere;
 	}
 
+	.ui-link-list-quiet .ui-link-list-row {
+		color: var(--text);
+	}
+
+	.ui-link-list-quiet .ui-link-list-label {
+		color: var(--text-muted);
+	}
+
 	@media (max-width: 760px) {
-		a {
+		.ui-link-list-row {
 			grid-template-columns: minmax(0, 1fr);
-			gap: 0;
-			padding-block: 5px;
 		}
 	}
 </style>

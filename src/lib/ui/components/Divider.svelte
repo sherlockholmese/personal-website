@@ -1,7 +1,7 @@
 <!--
 	@component
-	Horizontal rule using the `--border` token. Add a `label` for a box-drawing style
-	section break such as `── archive ──────`.
+	Horizontal rule. Add a `label` for a box-drawing style section break such as
+	`── archive ──────`. Prefer spacing when grouping alone is clear.
 -->
 <script lang="ts">
 	let {
@@ -34,7 +34,7 @@
 	.ui-divider {
 		--ui-divider-color: var(--border);
 		--ui-divider-style: solid;
-		margin: 18px 0;
+		margin-block: var(--space-4);
 		border: 0;
 		border-top: 1px var(--ui-divider-style) var(--ui-divider-color);
 	}
@@ -44,16 +44,16 @@
 	}
 
 	.ui-divider-strong {
-		--ui-divider-color: var(--hard-border);
+		--ui-divider-color: var(--border-strong);
 	}
 
 	.ui-divider-labelled {
 		display: flex;
 		align-items: center;
-		gap: 10px;
+		gap: var(--space-2);
 		border-top: 0;
-		color: var(--tx-2);
-		font-size: 14px;
+		color: var(--text-muted);
+		font-size: var(--text-caption);
 	}
 
 	.ui-divider-labelled::before,

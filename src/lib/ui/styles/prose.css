@@ -1,0 +1,46 @@
+/* Long-form typography for markdown output, which arrives as raw HTML. Used through `Prose`. */
+@layer components {
+	.ui-prose {
+		@apply prose text-[16px] leading-[1.58] text-[var(--text)] prose-headings:mt-0 prose-headings:mb-[12px] prose-headings:leading-[1.15] prose-headings:font-bold prose-p:mb-[16px] prose-p:text-justify prose-p:whitespace-pre-line prose-blockquote:mb-[16px] prose-blockquote:border-l-4 prose-blockquote:border-[var(--info)] prose-blockquote:bg-[var(--surface-raised)] prose-blockquote:px-[12px] prose-blockquote:py-[8px] prose-blockquote:text-justify prose-blockquote:font-normal prose-blockquote:whitespace-pre-line prose-blockquote:text-[var(--text)] prose-blockquote:not-italic prose-strong:font-bold prose-strong:text-[var(--accent)] prose-em:text-[var(--info)] prose-em:italic prose-code:rounded-none prose-code:bg-[var(--surface-raised)] prose-code:px-[4px] prose-code:py-0 prose-code:text-[var(--accent)] prose-ol:list-decimal prose-ol:pl-[24px] prose-ul:mb-[16px] prose-ul:list-disc prose-ul:pl-[24px] prose-li:mb-[8px] prose-li:text-justify prose-li:whitespace-pre-line prose-li:marker:text-[var(--accent)] prose-img:mx-auto prose-img:my-[14px] prose-img:mb-[18px] prose-img:border prose-img:border-[var(--border)] prose-hr:my-[18px] prose-hr:border-t prose-hr:border-[var(--border)];
+	}
+
+	.ui-prose code::before,
+	.ui-prose code::after,
+	.ui-prose blockquote::before,
+	.ui-prose blockquote::after {
+		content: none;
+	}
+
+	.ui-prose a {
+		color: var(--link-inline);
+		text-decoration: underline;
+		text-decoration-color: color-mix(in srgb, var(--link-inline) 65%, transparent);
+		text-underline-offset: 3px;
+	}
+
+	.ui-prose a:hover,
+	.ui-prose a:focus-visible {
+		color: var(--info);
+		text-decoration-color: var(--info);
+	}
+
+	.ui-prose p,
+	.ui-prose blockquote,
+	.ui-prose li {
+		text-justify: inter-word;
+		hyphens: none;
+		overflow-wrap: break-word;
+	}
+
+	.ui-prose-body {
+		@apply mx-auto max-w-[86ch] max-[760px]:max-w-full max-[760px]:text-[clamp(16px,4vw,18px)] max-[760px]:leading-[1.62] prose-h1:text-[26px] prose-h1:text-[var(--accent)] max-[760px]:prose-h1:text-[clamp(22px,6vw,26px)] prose-h2:mt-[20px] prose-h2:text-[19px] prose-h2:text-[var(--warning)] max-[760px]:prose-h2:text-[clamp(18px,5vw,22px)] prose-h3:mt-[16px] prose-h3:text-[17px] prose-h3:text-[var(--success)] max-[760px]:prose-h3:text-[clamp(17px,4.6vw,20px)];
+	}
+
+	.ui-prose-body img {
+		cursor: zoom-in;
+	}
+
+	.ui-prose-preview {
+		@apply min-h-0 max-w-none flex-1 overflow-auto px-[2px] pb-[8px] prose-h1:text-[19px] prose-h1:text-[var(--accent)] prose-h2:text-[16px] prose-h2:text-[var(--warning)] prose-h3:text-[17px] prose-h3:text-[var(--success)];
+	}
+}

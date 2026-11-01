@@ -1,6 +1,6 @@
 <!--
 	@component
-	Long-form content wrapper applying the blog post typography (`.terminal-prose`).
+	Long-form content wrapper applying the blog post typography (`styles/prose.css`).
 	Use it around hand-written HTML or `MarkdownBlocks` output; headings, lists,
 	blockquotes, links, inline code, and images pick up the post styles.
 
@@ -24,11 +24,7 @@
 
 <svelte:element
 	this={as}
-	class={[
-		'terminal-prose',
-		variant === 'body' ? 'terminal-prose-body' : 'terminal-prose-preview',
-		className
-	]}
+	class={['ui-prose', variant === 'body' ? 'ui-prose-body' : 'ui-prose-preview', className]}
 >
 	{@render children()}
 </svelte:element>

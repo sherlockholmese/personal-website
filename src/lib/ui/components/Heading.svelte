@@ -1,12 +1,12 @@
 <!--
 	@component
-	Section heading following the post tone ladder: h1 accent, h2 orange, h3 green,
-	h4+ cyan. `size` decouples the visual scale from the semantic `level`.
+	Section heading following the post color ladder, which indexes document depth. `size`
+	decouples the visual scale from the semantic `level`; `tone` overrides the color.
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { HTMLAttributes } from 'svelte/elements';
-	import { headingTone, toneColor, type Tone } from '../tone';
+	import { headingColor, toneColor, type Tone } from '../tone';
 
 	type Level = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -32,7 +32,7 @@
 <svelte:element
 	this={`h${level}`}
 	class={['ui-heading', `ui-heading-${Math.min(visualSize, 4)}`, className]}
-	style:--ui-tone={toneColor[tone ?? headingTone[visualSize]]}
+	style:--ui-tone={tone ? toneColor[tone] : headingColor[visualSize]}
 	{...rest}
 >
 	{@render children()}
@@ -40,44 +40,26 @@
 
 <style>
 	.ui-heading {
-		margin: 0 0 12px;
+		margin: 0 0 var(--space-3);
 		color: var(--ui-tone);
 		font-weight: 700;
 		line-height: 1.15;
-		scroll-margin-top: 22px;
+		scroll-margin-top: var(--ui-anchor-offset, var(--space-6));
 	}
 
 	.ui-heading-1 {
-		font-size: 32px;
+		font-size: var(--text-display);
 	}
 
 	.ui-heading-2 {
-		font-size: 19px;
+		font-size: var(--text-title);
 	}
 
 	.ui-heading-3 {
-		font-size: 17px;
+		font-size: var(--text-reading);
 	}
 
 	.ui-heading-4 {
-		font-size: 15px;
-	}
-
-	@media (max-width: 760px) {
-		.ui-heading-1 {
-			font-size: clamp(24px, 7vw, 30px);
-		}
-
-		.ui-heading-2 {
-			font-size: clamp(18px, 5vw, 22px);
-		}
-
-		.ui-heading-3 {
-			font-size: clamp(17px, 4.6vw, 20px);
-		}
-
-		.ui-heading-4 {
-			font-size: 16px;
-		}
+		font-size: var(--text-body);
 	}
 </style>

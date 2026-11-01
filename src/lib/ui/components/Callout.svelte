@@ -1,8 +1,9 @@
 <!--
 	@component
-	Inline message block with a colored left rule, modelled on the 404 panel. Use for
-	notes, warnings, errors, and success confirmations. `code` adds a bordered status
-	badge before the title (for example `404` or `ok`).
+	Inline message block with a colored left rule. Use for notes, warnings, errors, and
+	success confirmations. `code` adds a bordered status badge before the title (for
+	example `404`). Set `headingLevel` when the title heads the page or a section, and
+	`role="alert"` only for messages that appear in response to an action.
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
@@ -14,6 +15,7 @@
 		title,
 		code,
 		role,
+		headingLevel,
 		class: className = '',
 		children,
 		actions
@@ -21,24 +23,20 @@
 		tone?: Tone;
 		title?: string;
 		code?: string;
-		/** Use `alert` for errors that appear in response to an action. */
 		role?: 'note' | 'status' | 'alert';
+		headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
 		class?: string;
 		children?: Snippet;
 		actions?: Snippet;
 	} = $props();
 </script>
 
-<div
-	class={['ui-callout', className]}
-	style:--ui-tone={toneColor[tone]}
-	role={role ?? (tone === 'danger' ? 'alert' : 'note')}
->
+<div class={['ui-callout', className]} style:--ui-tone={toneColor[tone]} {role}>
 	{#if title || code}
-		<div class="ui-callout-title">
+		<svelte:element this={headingLevel ? `h${headingLevel}` : 'div'} class="ui-callout-title">
 			{#if code}<Badge {tone}>{code}</Badge>{/if}
 			{#if title}<span>{title}</span>{/if}
-		</div>
+		</svelte:element>
 	{/if}
 	{#if children}<div class="ui-callout-body">{@render children()}</div>{/if}
 	{#if actions}<div class="ui-callout-actions">{@render actions()}</div>{/if}
@@ -47,12 +45,12 @@
 <style>
 	.ui-callout {
 		display: grid;
-		gap: 10px;
+		gap: var(--space-2);
 		max-width: 86ch;
-		margin: 8px 0;
-		padding: 11px 12px;
-		border-left: 2px solid var(--ui-tone);
-		background: color-mix(in srgb, var(--bg-2) 44%, transparent);
+		margin-block: var(--space-2);
+		padding: var(--space-3);
+		border-left: var(--border-frame) solid var(--ui-tone);
+		background: color-mix(in srgb, var(--surface-raised) 44%, transparent);
 	}
 
 	.ui-callout-title {
@@ -60,17 +58,20 @@
 		min-width: 0;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 10px;
-		color: var(--yellow);
-		font-size: 17px;
+		gap: var(--space-2);
+		margin: 0;
+		color: var(--accent);
+		font-size: var(--text-title);
 		font-weight: 700;
 		line-height: 1.25;
 	}
 
 	.ui-callout-body {
+		display: grid;
+		gap: var(--space-2);
 		max-width: 68ch;
-		color: var(--tx-2);
-		font-size: 15px;
+		color: var(--text-muted);
+		font-size: var(--text-body);
 		line-height: 1.45;
 	}
 
@@ -81,17 +82,6 @@
 	.ui-callout-actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 8px;
-	}
-
-	@media (max-width: 760px) {
-		.ui-callout {
-			gap: 9px;
-			padding: 10px;
-		}
-
-		.ui-callout-body {
-			font-size: 16px;
-		}
+		gap: var(--space-2);
 	}
 </style>

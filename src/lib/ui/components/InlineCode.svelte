@@ -12,10 +12,10 @@
 
 <style>
 	.ui-inline-code {
-		padding: 0 4px;
+		padding: 0 var(--space-1);
 		border-radius: 0;
-		background: var(--bg-2);
-		color: var(--yellow);
+		background: var(--surface-raised);
+		color: var(--accent);
 		font-size: 0.92em;
 		overflow-wrap: anywhere;
 	}

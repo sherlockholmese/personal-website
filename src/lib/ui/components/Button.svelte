@@ -2,30 +2,33 @@
 	@component
 	Square-cornered terminal button. Renders an `<a>` when `href` is set.
 
-	| variant   | look                                                     |
+	| variant   | use                                                      |
 	| --------- | -------------------------------------------------------- |
-	| `outline` | bordered accent text, as in the mobile shortcut row      |
-	| `solid`   | filled accent block, as in command chips                 |
-	| `ghost`   | underlined cyan text, as in `retry` actions              |
-	| `danger`  | red outline that fills on hover, as in close buttons     |
-	| `success` | green outline that fills on hover, as in download blocks |
+	| `outline` | default action                                           |
+	| `solid`   | the one primary action in a region                       |
+	| `ghost`   | low-weight text action such as `retry`                   |
+	| `overlay` | translucent action floating over media                   |
+	| `danger`  | destructive action                                       |
+	| `success` | constructive action such as a download                   |
 
-	Below 760px buttons grow to a 40px (`sm`) or 44px (`md`) touch target.
+	Pass `loading` as a boolean for async actions: the indicator's slot is reserved
+	while idle, so the button keeps its width. Controls reach 44px on touch and below 760px.
 -->
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { HTMLAnchorAttributes, HTMLButtonAttributes } from 'svelte/elements';
 	import type { Size } from '../types';
 
-	type Variant = 'outline' | 'solid' | 'ghost' | 'danger' | 'success';
+	type Variant = 'outline' | 'solid' | 'ghost' | 'overlay' | 'danger' | 'success';
 
 	let {
 		variant = 'outline',
 		size = 'md',
 		href,
-		loading = false,
+		loading,
 		disabled = false,
 		block = false,
+		align = 'center',
 		type = 'button',
 		ref = $bindable<HTMLElement | undefined>(),
 		class: className = '',
@@ -35,10 +38,12 @@
 		variant?: Variant;
 		size?: Size;
 		href?: string;
+		/** Leave unset for actions that are never busy. */
 		loading?: boolean;
 		disabled?: boolean;
-		/** Stretch to the container width. */
+		/** Stretch to the container width. Long labels wrap. */
 		block?: boolean;
+		align?: 'center' | 'start';
 		type?: 'button' | 'submit' | 'reset';
 		ref?: HTMLElement;
 		class?: string;
@@ -49,6 +54,7 @@
 		'ui-button',
 		`ui-button-${variant}`,
 		`ui-button-${size}`,
+		`ui-button-align-${align}`,
 		block && 'ui-button-block',
 		className
 	]);
@@ -68,58 +74,64 @@
 		aria-busy={loading || undefined}
 		{...rest}
 	>
-		{#if loading}<span class="ui-button-spinner" aria-hidden="true"></span>{/if}
+		{#if loading !== undefined}
+			<span class="ui-button-spinner" class:ui-button-spinner-active={loading} aria-hidden="true"
+			></span>
+		{/if}
 		{@render children()}
 	</button>
 {/if}
 
 <style>
 	.ui-button {
-		--ui-button-color: var(--yellow);
+		--ui-button-color: var(--accent);
 		display: inline-flex;
 		flex: none;
 		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		border: 1px solid var(--border);
+		gap: var(--space-2);
+		border: 1px solid var(--border-control);
 		border-radius: 0;
-		background: var(--bg);
+		background: var(--surface);
 		color: var(--ui-button-color);
 		line-height: 1.2;
 		text-decoration: none;
 		white-space: nowrap;
-		cursor: pointer;
-		touch-action: manipulation;
+	}
+
+	.ui-button-align-center {
+		justify-content: center;
+	}
+
+	.ui-button-align-start {
+		justify-content: flex-start;
+		text-align: start;
 	}
 
 	.ui-button-sm {
-		min-height: 28px;
-		padding: 3px 8px;
-		font-size: 14px;
+		min-height: var(--control-sm);
+		padding: var(--space-half) var(--space-2);
+		font-size: var(--text-caption);
 	}
 
 	.ui-button-md {
-		min-height: 32px;
-		padding: 5px 12px;
+		min-height: var(--control-md);
+		padding: var(--space-1) var(--space-3);
 	}
 
 	.ui-button-block {
 		display: flex;
 		width: 100%;
+		white-space: normal;
+		overflow-wrap: anywhere;
 	}
 
-	.ui-button:hover:not(:disabled) {
-		background: var(--ui-2);
-	}
-
-	.ui-button:focus-visible {
-		outline: 2px solid var(--ui-button-color);
-		outline-offset: 2px;
+	.ui-button:active:not(:disabled) {
+		background: var(--control-active);
+		transition-duration: 0ms;
 	}
 
 	.ui-button:disabled {
-		cursor: not-allowed;
-		opacity: 0.55;
+		opacity: 0.6;
 	}
 
 	.ui-button[aria-busy='true'] {
@@ -127,34 +139,36 @@
 	}
 
 	.ui-button-solid {
-		border-color: var(--yellow);
-		background: var(--yellow);
-		color: var(--bg);
+		border-color: var(--accent);
+		background: var(--accent);
+		color: var(--on-accent);
 	}
 
-	.ui-button-solid:hover:not(:disabled) {
-		border-color: var(--cyan);
-		background: var(--cyan);
-	}
-
-	.ui-button-solid:focus-visible {
-		outline-color: var(--tx);
+	.ui-button-solid:active:not(:disabled) {
+		border-color: var(--accent-hover);
+		background: var(--accent-hover);
 	}
 
 	.ui-button-ghost {
-		--ui-button-color: var(--cyan);
-		min-height: 0;
-		padding-inline: 0;
-		border-color: transparent;
+		--ui-button-color: var(--link);
+		min-height: var(--target-min);
+		padding: 0;
+		border: 0;
 		background: transparent;
 		text-decoration: underline;
-		text-decoration-color: color-mix(in srgb, var(--cyan) 65%, transparent);
+		text-decoration-color: color-mix(in srgb, var(--link) 65%, transparent);
 		text-underline-offset: 3px;
 	}
 
-	.ui-button-ghost:hover:not(:disabled) {
+	.ui-button-ghost:active:not(:disabled) {
 		background: transparent;
-		color: var(--yellow);
+		color: var(--accent);
+	}
+
+	.ui-button-overlay {
+		--ui-button-color: var(--text);
+		border-color: transparent;
+		background: color-mix(in srgb, var(--surface) 80%, transparent);
 	}
 
 	.ui-button-danger,
@@ -164,36 +178,59 @@
 	}
 
 	.ui-button-danger {
-		--ui-button-color: var(--red);
+		--ui-button-color: var(--danger);
 	}
 
 	.ui-button-success {
-		--ui-button-color: var(--green);
+		--ui-button-color: var(--success);
 	}
 
-	.ui-button-danger:hover:not(:disabled),
-	.ui-button-success:hover:not(:disabled) {
-		background: var(--ui-button-color);
-		color: var(--bg);
+	.ui-button-danger:active:not(:disabled),
+	.ui-button-success:active:not(:disabled) {
+		background: color-mix(in srgb, var(--ui-button-color) 80%, var(--surface));
+		color: var(--surface);
+	}
+
+	@media (hover: hover) {
+		.ui-button:hover:not(:disabled, :active) {
+			background: var(--control-hover);
+		}
+
+		.ui-button-solid:hover:not(:disabled, :active) {
+			border-color: var(--accent-hover);
+			background: var(--accent-hover);
+		}
+
+		.ui-button-ghost:hover:not(:disabled, :active) {
+			background: transparent;
+			color: var(--accent);
+		}
+
+		.ui-button-danger:hover:not(:disabled, :active),
+		.ui-button-success:hover:not(:disabled, :active) {
+			background: var(--ui-button-color);
+			color: var(--surface);
+		}
 	}
 
 	.ui-button-spinner {
+		flex: none;
 		width: 1ch;
 		text-align: center;
 	}
 
-	.ui-button-spinner::before {
+	.ui-button-spinner-active::before {
 		content: '…';
 	}
 
 	@media (prefers-reduced-motion: no-preference) {
 		.ui-button {
 			transition:
-				background-color var(--motion-fast) var(--ease-standard),
-				color var(--motion-fast) var(--ease-standard);
+				background-color var(--motion-press) var(--ease-standard),
+				color var(--motion-press) var(--ease-standard);
 		}
 
-		.ui-button-spinner::before {
+		.ui-button-spinner-active::before {
 			content: '|';
 			animation: ui-button-spin 480ms steps(1) infinite;
 		}
@@ -211,23 +248,6 @@
 		}
 		75% {
 			content: '\\';
-		}
-	}
-
-	@media (max-width: 760px) {
-		.ui-button-sm {
-			min-height: 40px;
-			padding-inline: 11px;
-		}
-
-		.ui-button-md {
-			min-height: 44px;
-			padding-inline: 14px;
-			font-size: 16px;
-		}
-
-		.ui-button-ghost {
-			min-height: 44px;
 		}
 	}
 </style>

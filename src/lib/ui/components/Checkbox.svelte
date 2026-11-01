@@ -44,13 +44,13 @@
 
 <style>
 	.ui-checkbox {
+		position: relative;
 		display: inline-flex;
+		min-height: var(--target-min);
 		align-items: flex-start;
-		gap: 8px;
-		color: var(--tx);
+		gap: var(--space-2);
+		color: var(--text);
 		line-height: 1.45;
-		cursor: pointer;
-		touch-action: manipulation;
 	}
 
 	.ui-checkbox-input {
@@ -64,7 +64,7 @@
 
 	.ui-checkbox-box {
 		flex: none;
-		color: var(--yellow);
+		color: var(--accent);
 		white-space: pre;
 	}
 
@@ -73,27 +73,28 @@
 	}
 
 	.ui-checkbox-description {
-		color: var(--tx-2);
-		font-size: 14px;
+		color: var(--text-muted);
+		font-size: var(--text-caption);
 	}
 
-	.ui-checkbox:hover .ui-checkbox-box {
-		color: var(--cyan);
+	@media (hover: hover) {
+		.ui-checkbox:hover .ui-checkbox-box {
+			color: var(--accent-hover);
+		}
 	}
 
 	.ui-checkbox-input:focus-visible + .ui-checkbox-box {
-		outline: 2px solid var(--yellow);
-		outline-offset: 2px;
+		outline: var(--focus-width) solid var(--focus);
+		outline-offset: var(--focus-offset);
 	}
 
 	.ui-checkbox-disabled {
 		cursor: not-allowed;
-		opacity: 0.55;
+		opacity: 0.6;
 	}
 
-	@media (max-width: 760px) {
+	@media (max-width: 760px), (pointer: coarse) {
 		.ui-checkbox {
-			min-height: 44px;
 			align-items: center;
 		}
 	}

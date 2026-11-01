@@ -46,30 +46,30 @@
 	}
 
 	.ui-link-inline {
-		color: var(--blue);
+		color: var(--link-inline);
 		text-decoration: underline;
-		text-decoration-color: color-mix(in srgb, var(--blue) 65%, transparent);
+		text-decoration-color: color-mix(in srgb, var(--link-inline) 65%, transparent);
 		text-underline-offset: 3px;
 	}
 
 	.ui-link-inline:hover,
 	.ui-link-inline:focus-visible {
-		color: var(--cyan);
-		text-decoration-color: var(--cyan);
+		color: var(--link);
+		text-decoration-color: var(--link);
 	}
 
 	.ui-link-plain {
-		color: var(--cyan);
+		color: var(--link);
 		text-decoration: none;
 	}
 
 	.ui-link-plain:hover,
 	.ui-link-plain:focus-visible {
-		color: var(--yellow);
+		color: var(--accent);
 	}
 
 	.ui-link:focus-visible {
-		outline: 2px solid var(--tx);
+		outline: 2px solid var(--text);
 		outline-offset: 2px;
 	}
 </style>

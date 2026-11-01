@@ -1,14 +1,15 @@
 <!--
 	@component
-	Custom dropdown matching the blog browser sort menu: a bordered trigger showing the
-	current option and a listbox that drops beneath it.
+	Dropdown with a bordered trigger and a listbox. The list opens in the browser top
+	layer, so a scrolling panel or modal dialog never clips or covers it.
 
-	Keyboard: Enter/Space/ArrowDown open, ArrowUp/ArrowDown/Home/End move, Enter selects,
-	Escape or Tab closes. Focus leaving the control closes the menu.
+	Keyboard: Enter/Space/Arrows open, Arrows/Home/End move, typing jumps to a match,
+	Enter selects, Escape or Tab closes. Focus leaving the control closes the list.
 -->
 <script lang="ts" generics="T extends string">
 	import { tick } from 'svelte';
 	import type { SelectOption } from '../types';
+	import Chevron from './Chevron.svelte';
 
 	let {
 		value = $bindable(),
@@ -30,11 +31,17 @@
 		class?: string;
 	} = $props();
 
+	const MENU_GAP_PX = 4;
+	const VIEWPORT_INSET_PX = 8;
+	const TYPEAHEAD_RESET_MS = 500;
+
 	const id = $props.id();
 	let open = $state(false);
 	let activeIndex = $state(-1);
 	let trigger = $state<HTMLButtonElement>();
 	let selected = $derived(options.find((option) => option.value === value));
+	let typeahead = '';
+	let typeaheadTimer: ReturnType<typeof setTimeout> | undefined;
 
 	function enabledIndex(from: number, step: 1 | -1) {
 		for (let offset = 0; offset < options.length; offset += 1) {
@@ -44,12 +51,16 @@
 		return -1;
 	}
 
+	function revealActive() {
+		document.getElementById(`${id}-option-${activeIndex}`)?.scrollIntoView({ block: 'nearest' });
+	}
+
 	async function openMenu(index = options.findIndex((option) => option.value === value)) {
 		if (disabled || !options.length) return;
 		open = true;
 		activeIndex = enabledIndex(Math.max(index, 0), 1);
 		await tick();
-		document.getElementById(`${id}-option-${activeIndex}`)?.scrollIntoView({ block: 'nearest' });
+		revealActive();
 	}
 
 	function closeMenu(restoreFocus = false) {
@@ -61,13 +72,24 @@
 		const option = options[index];
 		if (!option || option.disabled) return;
 		value = option.value;
-		onChange?.(option.value);
+		// Close first so an onChange handler may move focus elsewhere.
 		closeMenu(true);
+		onChange?.(option.value);
 	}
 
-	function move(step: 1 | -1) {
-		activeIndex = enabledIndex(activeIndex + step, step);
-		document.getElementById(`${id}-option-${activeIndex}`)?.scrollIntoView({ block: 'nearest' });
+	function moveTo(index: number) {
+		activeIndex = index;
+		revealActive();
+	}
+
+	function jumpToTyped(key: string) {
+		clearTimeout(typeaheadTimer);
+		typeaheadTimer = setTimeout(() => (typeahead = ''), TYPEAHEAD_RESET_MS);
+		typeahead += key.toLowerCase();
+		const match = options.findIndex(
+			(option) => !option.disabled && option.label.toLowerCase().startsWith(typeahead)
+		);
+		if (match >= 0) moveTo(match);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
@@ -82,19 +104,19 @@
 		switch (event.key) {
 			case 'ArrowDown':
 				event.preventDefault();
-				move(1);
+				moveTo(enabledIndex(activeIndex + 1, 1));
 				break;
 			case 'ArrowUp':
 				event.preventDefault();
-				move(-1);
+				moveTo(enabledIndex(activeIndex - 1, -1));
 				break;
 			case 'Home':
 				event.preventDefault();
-				activeIndex = enabledIndex(0, 1);
+				moveTo(enabledIndex(0, 1));
 				break;
 			case 'End':
 				event.preventDefault();
-				activeIndex = enabledIndex(options.length - 1, -1);
+				moveTo(enabledIndex(options.length - 1, -1));
 				break;
 			case 'Enter':
 			case ' ':
@@ -108,12 +130,43 @@
 			case 'Tab':
 				closeMenu();
 				break;
+			default:
+				if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+					jumpToTyped(event.key);
+				}
 		}
 	}
 
 	function handleFocusOut(event: FocusEvent) {
 		const next = event.relatedTarget as Node | null;
 		if (!next || !(event.currentTarget as HTMLElement).contains(next)) closeMenu();
+	}
+
+	/** Shows the list in the top layer and keeps it attached to the trigger. */
+	function floatingList(list: HTMLElement) {
+		function place() {
+			if (!trigger) return;
+			const rect = trigger.getBoundingClientRect();
+			const spaceBelow = window.innerHeight - rect.bottom - VIEWPORT_INSET_PX;
+			const opensUp = list.offsetHeight > spaceBelow && rect.top > spaceBelow;
+			list.style.left = `${rect.left}px`;
+			list.style.width = `${rect.width}px`;
+			list.style.top = opensUp
+				? `${Math.max(VIEWPORT_INSET_PX, rect.top - list.offsetHeight - MENU_GAP_PX)}px`
+				: `${rect.bottom + MENU_GAP_PX}px`;
+		}
+
+		list.showPopover();
+		place();
+		window.addEventListener('resize', place);
+		window.addEventListener('scroll', place, { capture: true, passive: true });
+
+		return {
+			destroy() {
+				window.removeEventListener('resize', place);
+				window.removeEventListener('scroll', place, { capture: true });
+			}
+		};
 	}
 </script>
 
@@ -136,16 +189,20 @@
 			onclick={() => (open ? closeMenu() : openMenu())}
 			onkeydown={handleKeydown}
 		>
-			<span class:ui-select-placeholder={!selected}>{selected?.label ?? placeholder}</span>
-			<span aria-hidden="true">{open ? '▴' : '▾'}</span>
+			<span class="ui-select-value" class:ui-select-placeholder={!selected}>
+				{selected?.label ?? placeholder}
+			</span>
+			<Chevron {open} />
 		</button>
 		{#if open}
 			<ul
 				id={`${id}-listbox`}
-				class="ui-select-menu"
+				class="ui-select-menu ui-scroll"
 				role="listbox"
 				aria-labelledby={`${id}-label`}
 				tabindex="-1"
+				popover="manual"
+				use:floatingList
 			>
 				{#each options as option, index (option.value)}
 					<!-- Keyboard selection is handled by the combobox via aria-activedescendant. -->
@@ -161,8 +218,10 @@
 						onpointerdown={(event) => event.preventDefault()}
 						onclick={() => choose(index)}
 					>
-						<span aria-hidden="true">{option.value === value ? '*' : ' '}</span>
-						{option.label}
+						<span class="ui-select-mark" aria-hidden="true"
+							>{option.value === value ? '*' : ''}</span
+						>
+						<span>{option.label}</span>
 					</li>
 				{/each}
 			</ul>
@@ -175,16 +234,15 @@
 		display: grid;
 		grid-template-columns: auto minmax(104px, 1fr);
 		align-items: center;
-		gap: 4px 10px;
+		gap: var(--space-1) var(--space-2);
 		min-width: 0;
 	}
 
 	.ui-select-label {
-		color: var(--yellow);
+		color: var(--text-muted);
 	}
 
 	.ui-select-anchor {
-		position: relative;
 		min-width: 0;
 	}
 
@@ -193,80 +251,84 @@
 	}
 
 	.ui-select-trigger {
-		display: inline-flex;
+		display: flex;
 		width: 100%;
-		height: 26px;
+		min-height: var(--control-sm);
 		align-items: center;
 		justify-content: space-between;
-		gap: 10px;
-		padding: 0 8px;
-		border: 1px solid var(--border);
-		background: var(--bg);
-		box-shadow: inset 0 -1px 0 var(--ui-2);
-		color: var(--yellow);
-		cursor: pointer;
+		gap: var(--space-2);
+		padding: var(--space-half) var(--space-2);
+		border: 1px solid var(--border-control);
+		background: var(--surface);
+		color: var(--accent);
+		text-align: start;
 	}
 
-	.ui-select-trigger:focus-visible,
 	.ui-select-trigger[aria-expanded='true'] {
-		border-color: var(--yellow);
-		box-shadow: 0 0 0 1px var(--yellow);
-		outline: none;
+		border-color: var(--accent);
+	}
+
+	.ui-select-trigger:active:not(:disabled) {
+		background: var(--control-active);
 	}
 
 	.ui-select-trigger:disabled {
-		cursor: not-allowed;
-		opacity: 0.55;
+		opacity: 0.6;
+	}
+
+	@media (hover: hover) {
+		.ui-select-trigger:hover:not(:disabled, :active) {
+			background: var(--control-hover);
+		}
+	}
+
+	.ui-select-value {
+		min-width: 0;
+		overflow-wrap: anywhere;
 	}
 
 	.ui-select-placeholder {
-		color: var(--tx-2);
+		color: var(--text-muted);
 	}
 
 	.ui-select-menu {
-		position: absolute;
-		top: calc(100% + 6px);
-		right: 0;
-		left: 0;
-		z-index: 6;
+		position: fixed;
+		inset: auto;
 		max-height: 240px;
 		margin: 0;
 		padding: 0;
 		overflow: auto;
-		border: 1px solid var(--border);
-		background: var(--bg);
-		box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+		border: 1px solid var(--border-control);
+		background: var(--surface);
+		box-shadow: var(--shadow-floating);
+		color: var(--text);
 		list-style: none;
-		scrollbar-width: thin;
-		scrollbar-color: var(--border) transparent;
 	}
 
 	.ui-select-option {
 		display: flex;
-		gap: 8px;
-		padding: 4px 8px;
-		color: var(--tx);
-		white-space: pre;
-		cursor: pointer;
+		min-height: var(--target-min);
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-1) var(--space-2);
+		overflow-wrap: anywhere;
+	}
+
+	.ui-select-mark {
+		flex: none;
+		width: 1ch;
+	}
+
+	.ui-select-option[aria-selected='true'] {
+		color: var(--accent);
 	}
 
 	.ui-select-option-active {
-		background: var(--yellow);
-		color: var(--bg);
+		background: var(--control-hover);
 	}
 
 	.ui-select-option[aria-disabled='true'] {
-		color: var(--tx-2);
-		cursor: not-allowed;
-	}
-
-	.ui-visually-hidden {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		overflow: hidden;
-		clip-path: inset(50%);
-		white-space: nowrap;
+		color: var(--text-muted);
 	}
 
 	@media (prefers-reduced-motion: no-preference) {
@@ -278,16 +340,6 @@
 	@media (max-width: 760px) {
 		.ui-select {
 			grid-template-columns: minmax(0, 1fr);
-		}
-
-		.ui-select-trigger {
-			min-height: 44px;
-			font-size: 16px;
-		}
-
-		.ui-select-option {
-			min-height: 40px;
-			align-items: center;
 		}
 	}
 </style>

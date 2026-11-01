@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { Button, Text } from '#lib/ui/index.ts';
 	import {
 		claimTurnstileChallenge,
 		loadTurnstile,
@@ -184,37 +185,47 @@
 	});
 </script>
 
-<div class="not-prose my-[16px] border border-[var(--green)] bg-[var(--bg-2)] text-[var(--green)]">
-	<button
-		type="button"
-		onclick={startDownload}
-		disabled={status === 'checking' ||
-			status === 'loading' ||
-			status === 'ready' ||
-			status === 'verifying'}
-		class="flex min-h-[42px] w-full cursor-pointer flex-wrap items-center gap-x-[10px] gap-y-[4px] bg-transparent px-[14px] py-[8px] text-left font-bold text-current hover:bg-[var(--green)] hover:text-[var(--bg)] focus-visible:bg-[var(--green)] focus-visible:text-[var(--bg)] focus-visible:outline-none disabled:cursor-wait disabled:opacity-70"
+<div class="not-prose dist-download">
+	<Button
+		variant="success"
+		block
+		align="start"
+		loading={status === 'checking' || status === 'verifying'}
+		disabled={status === 'loading' || status === 'ready'}
 		aria-label={`${label}: ${file}`}
+		onclick={startDownload}
 	>
-		<span aria-hidden="true">&gt;</span>
 		<span>{label}</span>
-		<span class="font-normal break-all opacity-70">[{file}]</span>
-	</button>
+		<span class="dist-download-file">[{file}]</span>
+	</Button>
 
 	{#if status === 'loading' || status === 'ready' || status === 'verifying'}
-		<div class="px-[14px] pb-[10px]">
-			<div bind:this={challengeContainer} class="min-h-[65px] w-full max-w-[300px]"></div>
-		</div>
+		<div bind:this={challengeContainer} class="dist-download-challenge"></div>
 	{/if}
 	{#if statusMessage}
-		<div class="px-[14px] pb-[8px] text-[var(--tx-2)]" role="status">{statusMessage}</div>
+		<Text as="div" tone="muted" role="status">{statusMessage}</Text>
 	{/if}
 	{#if status === 'error' || status === 'rate-limited'}
-		<button
-			type="button"
-			onclick={startDownload}
-			class="mx-[14px] mb-[8px] cursor-pointer bg-transparent p-0 text-left text-[var(--cyan)] underline underline-offset-[3px] hover:text-[var(--yellow)] focus-visible:text-[var(--yellow)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tx)]"
-		>
-			retry
-		</button>
+		<Button variant="ghost" onclick={startDownload}>retry</Button>
 	{/if}
 </div>
+
+<style>
+	.dist-download {
+		display: grid;
+		justify-items: start;
+		gap: var(--space-2);
+		margin-block: var(--space-4);
+	}
+
+	.dist-download-file {
+		font-weight: 400;
+		overflow-wrap: anywhere;
+	}
+
+	.dist-download-challenge {
+		width: 100%;
+		max-width: 300px;
+		min-height: 65px;
+	}
+</style>

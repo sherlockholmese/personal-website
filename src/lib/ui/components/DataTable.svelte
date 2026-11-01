@@ -1,11 +1,11 @@
 <!--
 	@component
-	Responsive grid table in the style of the `projects` listing: green column headers,
-	ruled rows, and single-column stacked rows below 760px.
+	Responsive table in the style of the `projects` listing: a native `<table>` with ruled
+	rows that stack into labelled blocks below 760px.
 
 	Give `href` to make each row a link (the first cell carries the anchor and stretches
-	over the row, so the table keeps proper semantics). Use the `cell` snippet for custom
-	cell rendering and `empty` for the no-results state.
+	over the row). Use the `cell` snippet for custom cell rendering and `empty` for the
+	no-results state.
 -->
 <script lang="ts" generics="Row">
 	import type { Snippet } from 'svelte';
@@ -36,8 +36,6 @@
 		empty?: Snippet;
 	} = $props();
 
-	let template = $derived(columns.map((column) => column.width ?? 'minmax(0, 1fr)').join(' '));
-
 	function text(row: Row, column: DataTableColumn<Row>) {
 		if (column.value) return column.value(row);
 		const record = row as Record<string, unknown>;
@@ -45,90 +43,91 @@
 	}
 </script>
 
-<div
-	class={['ui-table', className]}
-	class:ui-table-linked={href}
-	role="table"
-	aria-label={label}
-	style:--ui-table-columns={template}
->
-	<div class="ui-table-row ui-table-head" role="row">
+<table class={['ui-table', className]} class:ui-table-linked={href} aria-label={label}>
+	<colgroup>
 		{#each columns as column (column.key)}
-			<span role="columnheader">{column.label}</span>
+			<col style:width={column.width} />
 		{/each}
-	</div>
-	{#each rows as row (rowKey(row))}
-		<div class="ui-table-row" role="row">
-			{#each columns as column, index (column.key)}
-				<span
-					class="ui-table-cell"
-					role="cell"
-					style:--ui-tone={column.tone ? toneColor[column.tone] : undefined}
-				>
-					<span class="ui-table-cell-label" aria-hidden="true">{column.label}</span>
-					{#if index === 0 && href}
-						<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-						<a
-							class="ui-table-link"
-							href={href(row)}
-							target={external ? '_blank' : undefined}
-							rel={external ? 'external noreferrer' : undefined}
-						>
-							{#if cell}{@render cell(row, column)}{:else}{text(row, column)}{/if}
-						</a>
-					{:else if cell}
-						{@render cell(row, column)}
-					{:else}
-						{text(row, column)}
-					{/if}
-				</span>
+	</colgroup>
+	<thead>
+		<tr>
+			{#each columns as column (column.key)}
+				<th scope="col">{column.label}</th>
 			{/each}
-		</div>
-	{:else}
-		<div class="ui-table-empty" role="row">
-			<span role="cell"
-				>{#if empty}{@render empty()}{:else}no results{/if}</span
-			>
-		</div>
-	{/each}
-</div>
+		</tr>
+	</thead>
+	<tbody>
+		{#each rows as row (rowKey(row))}
+			<tr>
+				{#each columns as column, index (column.key)}
+					<td style:--ui-tone={column.tone ? toneColor[column.tone] : undefined}>
+						<span class="ui-table-cell-label" aria-hidden="true">{column.label}</span>
+						{#if index === 0 && href}
+							<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+							<a
+								class="ui-table-link"
+								href={href(row)}
+								target={external ? '_blank' : undefined}
+								rel={external ? 'external noreferrer' : undefined}
+							>
+								{#if cell}{@render cell(row, column)}{:else}{text(row, column)}{/if}
+							</a>
+						{:else if cell}
+							{@render cell(row, column)}
+						{:else}
+							{text(row, column)}
+						{/if}
+					</td>
+				{/each}
+			</tr>
+		{:else}
+			<tr>
+				<td class="ui-table-empty" colspan={columns.length}>
+					{#if empty}{@render empty()}{:else}no results{/if}
+				</td>
+			</tr>
+		{/each}
+	</tbody>
+</table>
 
 <style>
 	.ui-table {
-		display: grid;
+		width: 100%;
+		border-collapse: collapse;
+		table-layout: fixed;
 	}
 
-	.ui-table-row {
-		position: relative;
-		display: grid;
-		grid-template-columns: var(--ui-table-columns);
-		gap: 12px;
-		padding: 8px;
+	th {
+		padding: var(--space-1) var(--ui-panel-inset, var(--space-2));
 		border-bottom: 1px solid var(--border);
-		line-height: 1.4;
+		color: var(--heading-3);
+		font-weight: 400;
+		text-align: start;
 	}
 
-	.ui-table-row:last-child {
+	tbody tr {
+		position: relative;
+		border-bottom: 1px solid var(--border);
+	}
+
+	tbody tr:last-child {
 		border-bottom: 0;
 	}
 
-	.ui-table-head {
-		padding-block: 6px;
-		color: var(--green);
-	}
-
-	.ui-table-cell {
-		min-width: 0;
-		color: var(--ui-tone, var(--tx));
+	td {
+		padding: var(--space-2) var(--ui-panel-inset, var(--space-2));
+		color: var(--ui-tone, var(--text));
+		line-height: 1.4;
 		overflow-wrap: anywhere;
+		vertical-align: top;
 	}
 
 	.ui-table-cell-label {
 		display: none;
 	}
 
-	.ui-table-linked .ui-table-cell:first-child {
-		color: var(--ui-tone, var(--cyan));
+	.ui-table-linked td:first-child {
+		color: var(--ui-tone, var(--link));
 	}
 
 	.ui-table-link {
@@ -142,40 +141,49 @@
 		inset: 0;
 	}
 
-	.ui-table-linked .ui-table-row:not(.ui-table-head):hover .ui-table-cell:first-child,
-	.ui-table-link:focus-visible {
-		color: var(--yellow);
+	.ui-table-linked tbody tr:hover td:first-child {
+		color: var(--accent);
 	}
 
 	.ui-table-link:focus-visible {
 		outline: none;
 	}
 
-	.ui-table-row:has(.ui-table-link:focus-visible) {
-		outline: 2px solid var(--yellow);
-		outline-offset: -2px;
+	tbody tr:has(.ui-table-link:focus-visible) {
+		outline: var(--focus-width) solid var(--focus);
+		outline-offset: calc(-1 * var(--focus-width));
 	}
 
 	.ui-table-empty {
-		padding: 8px;
-		color: var(--tx-2);
+		color: var(--text-muted);
 	}
 
 	@media (max-width: 760px) {
-		.ui-table-head {
+		.ui-table,
+		tbody,
+		tbody tr,
+		td {
+			display: block;
+			width: 100%;
+		}
+
+		colgroup,
+		thead {
 			display: none;
 		}
 
-		.ui-table-row {
-			grid-template-columns: minmax(0, 1fr);
-			gap: 3px;
-			padding-block: 10px;
+		tbody tr {
+			padding-block: var(--space-2);
 		}
 
-		.ui-table-cell:not(:first-child) .ui-table-cell-label {
+		td {
+			padding-block: var(--space-half);
+		}
+
+		td:not(:first-child) .ui-table-cell-label {
 			display: inline;
 			margin-right: 1ch;
-			color: var(--tx-2);
+			color: var(--text-muted);
 		}
 	}
 </style>

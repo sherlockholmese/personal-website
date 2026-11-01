@@ -21,7 +21,7 @@
 	}: {
 		as?: 'p' | 'span' | 'div' | 'small' | 'strong';
 		tone?: Tone;
-		size?: 'xs' | 'sm' | 'md' | 'lg';
+		size?: 'sm' | 'md' | 'lg';
 		justify?: boolean;
 		bold?: boolean;
 		/** Limit line length to a comfortable reading width. */
@@ -52,26 +52,21 @@
 
 	p.ui-text,
 	div.ui-text {
-		margin-bottom: 12px;
-	}
-
-	.ui-text-xs {
-		font-size: 12px;
-		line-height: 1.4;
+		margin-bottom: var(--space-3);
 	}
 
 	.ui-text-sm {
-		font-size: 14px;
+		font-size: var(--text-caption);
 		line-height: 1.45;
 	}
 
 	.ui-text-md {
-		font-size: 15px;
+		font-size: var(--text-body);
 		line-height: 1.5;
 	}
 
 	.ui-text-lg {
-		font-size: 16px;
+		font-size: var(--text-reading);
 		line-height: 1.58;
 	}
 
@@ -79,6 +74,7 @@
 		text-align: justify;
 		text-justify: inter-word;
 		hyphens: none;
+		overflow-wrap: break-word;
 	}
 
 	.ui-text-bold {
@@ -87,20 +83,5 @@
 
 	.ui-text-measure {
 		max-width: 75ch;
-	}
-
-	@media (max-width: 760px) {
-		.ui-text-md {
-			font-size: 16px;
-		}
-
-		.ui-text-lg {
-			font-size: clamp(16px, 4vw, 18px);
-			line-height: 1.62;
-		}
-
-		.ui-text-justify {
-			overflow-wrap: break-word;
-		}
 	}
 </style>

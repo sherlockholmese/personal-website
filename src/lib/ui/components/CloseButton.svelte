@@ -1,7 +1,6 @@
 <!--
 	@component
-	The red bordered `X` used by the terminal titlebar, panels, and overlays. Grows to a
-	40px touch target below the 760px breakpoint.
+	The red bordered `X` used by the terminal titlebar, panels, and overlays.
 -->
 <script lang="ts">
 	import type { HTMLButtonAttributes } from 'svelte/elements';
@@ -27,31 +26,35 @@
 		flex: none;
 		align-items: center;
 		justify-content: center;
-		width: 24px;
-		height: 24px;
+		width: var(--control-close);
+		height: var(--control-close);
 		padding: 0;
-		border: 1px solid var(--red);
+		border: 1px solid var(--danger);
 		border-radius: 0;
-		background: var(--bg);
-		color: var(--red);
+		background: var(--surface);
+		color: var(--danger);
 		font-weight: 700;
 		line-height: 1;
-		cursor: pointer;
-		touch-action: manipulation;
 	}
 
-	.ui-close:hover,
-	.ui-close:focus-visible {
-		background: var(--red);
-		color: var(--bg);
-		outline: none;
+	.ui-close:active {
+		background: color-mix(in srgb, var(--danger) 80%, var(--surface));
+		color: var(--surface);
+		transition-duration: 0ms;
 	}
 
-	@media (max-width: 760px) {
+	@media (hover: hover) {
+		.ui-close:hover:not(:active) {
+			background: var(--danger);
+			color: var(--surface);
+		}
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
 		.ui-close {
-			width: 40px;
-			height: 40px;
-			font-size: 18px;
+			transition:
+				background-color var(--motion-press) var(--ease-standard),
+				color var(--motion-press) var(--ease-standard);
 		}
 	}
 </style>

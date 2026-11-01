@@ -1,10 +1,11 @@
 <!--
 	@component
-	Standalone fenced code block matching blog posts: language label in the top rule,
-	hover copy button, and line-number gutter (hidden on mobile).
+	Fenced code block: language label in the top rule, copy button, and line-number
+	gutter (hidden on mobile). The copy button reveals on hover where hover exists and is
+	always visible on touch.
 
-	Pass `highlight` to syntax-highlight with the site's Shiki setup, or `html` if you
-	already have highlighted markup. `compact` drops line numbers and shrinks the text.
+	Pass `html` for markup that is already highlighted, or `highlight` to run Shiki here
+	(`theme` defaults to the site theme). `compact` drops line numbers and shrinks the text.
 -->
 <script lang="ts">
 	import { onDestroy } from 'svelte';
@@ -18,7 +19,7 @@
 		lineNumbers: numbered = true,
 		compact = false,
 		highlight = false,
-		theme = 'dark',
+		theme,
 		html,
 		class: className = ''
 	}: {
@@ -48,7 +49,9 @@
 	$effect(() => {
 		if (html || !highlight) return;
 		let cancelled = false;
-		void highlightCode(code.replace(/\n$/, ''), language, theme).then((result) => {
+		const activeTheme: Theme =
+			theme ?? (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+		void highlightCode(code.replace(/\n$/, ''), language, activeTheme).then((result) => {
 			if (!cancelled) highlighted = result;
 		});
 		return () => {
@@ -70,12 +73,12 @@
 	onDestroy(() => clearTimeout(copyResetTimer));
 </script>
 
-<div class={['code-block not-prose', className]} class:code-block-compact={compact}>
-	<span class="code-block-language">{language}</span>
+<div class={['ui-code not-prose', className]} class:ui-code-compact={compact}>
+	<span class="ui-code-language">{language}</span>
 	<button
 		type="button"
-		class="code-block-copy"
-		class:code-block-copy-active={Boolean(copyState)}
+		class="ui-code-copy"
+		class:ui-code-copy-active={Boolean(copyState)}
 		aria-label={`${copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed, retry copying' : 'Copy'} ${language} code`}
 		onclick={copy}
 	>
@@ -100,6 +103,65 @@
 </div>
 
 <style>
+	.ui-code {
+		position: relative;
+		margin-block: var(--space-3);
+		border-block: 1px solid var(--border);
+		background: var(--surface);
+	}
+
+	.ui-code-compact {
+		margin-block: var(--space-2);
+	}
+
+	.ui-code-language {
+		position: absolute;
+		top: 0;
+		right: var(--space-3);
+		z-index: var(--layer-raised);
+		padding-inline: var(--space-1);
+		background: var(--surface);
+		color: var(--accent);
+		font-size: var(--text-caption);
+		line-height: 1;
+		text-transform: lowercase;
+		transform: translateY(-50%);
+	}
+
+	.ui-code-copy {
+		position: absolute;
+		top: var(--space-2);
+		right: var(--space-3);
+		z-index: var(--layer-raised);
+		min-width: 7ch;
+		min-height: max(var(--control-close), var(--target-min));
+		padding-inline: var(--space-1);
+		background: var(--surface);
+		color: var(--text-muted);
+		font-size: var(--text-caption);
+		line-height: 1;
+		text-align: right;
+	}
+
+	.ui-code-copy:hover,
+	.ui-code-copy:focus-visible {
+		color: var(--text);
+	}
+
+	@media (hover: hover) and (pointer: fine) and (min-width: 761px) {
+		.ui-code-copy {
+			opacity: 0;
+			pointer-events: none;
+		}
+
+		.ui-code:hover .ui-code-copy,
+		.ui-code-copy:focus-visible,
+		.ui-code-copy-active {
+			opacity: 1;
+			pointer-events: auto;
+		}
+	}
+
 	.ui-code-grid-numbered {
 		display: grid;
 		grid-template-columns: calc(5ch + 20px) minmax(0, 1fr);
@@ -108,10 +170,10 @@
 
 	.ui-code-lines {
 		margin: 0;
-		padding: 10px 8px 10px 12px;
+		padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
 		border-right: 1px solid var(--border);
-		color: var(--tx-2);
-		font-size: 16px;
+		color: var(--text-muted);
+		font-size: var(--text-reading);
 		font-variant-numeric: tabular-nums;
 		line-height: 1.45;
 		list-style: none;
@@ -125,25 +187,26 @@
 
 	.ui-code-grid :global(.ui-code-body pre) {
 		margin: 0;
-		padding: 10px 12px;
+		padding: var(--space-2) var(--space-3);
 		overflow-x: auto;
+		/* Shiki writes its background inline; the block sits on the page surface instead. */
 		background: transparent !important;
-		color: var(--tx);
+		color: var(--text);
 	}
 
 	.ui-code-grid :global(.ui-code-body code) {
 		display: block;
 		background: transparent;
-		font-size: 16px;
+		font-size: var(--text-reading);
 		line-height: 1.45;
 	}
 
-	.code-block-compact .ui-code-grid :global(.ui-code-body pre) {
-		padding: 8px;
+	.ui-code-compact .ui-code-grid :global(.ui-code-body pre) {
+		padding: var(--space-2);
 	}
 
-	.code-block-compact .ui-code-grid :global(.ui-code-body code) {
-		font-size: 13px;
+	.ui-code-compact .ui-code-grid :global(.ui-code-body code) {
+		font-size: var(--text-caption);
 	}
 
 	@media (max-width: 760px) {
@@ -156,7 +219,7 @@
 		}
 
 		.ui-code-grid :global(.ui-code-body pre) {
-			padding-inline: 10px;
+			padding-inline: var(--space-2);
 		}
 	}
 </style>

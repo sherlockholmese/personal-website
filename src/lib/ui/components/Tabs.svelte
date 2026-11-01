@@ -96,57 +96,43 @@
 <style>
 	.ui-tabs-list {
 		display: flex;
-		gap: 6px;
+		gap: var(--space-2);
 		overflow-x: auto;
-		padding-bottom: 6px;
+		padding: var(--space-half) var(--space-half) var(--space-2);
 		border-bottom: 1px solid var(--border);
 		scrollbar-width: none;
 	}
 
 	.ui-tab {
 		flex: none;
-		min-height: 28px;
-		padding: 3px 10px;
-		border: 1px solid var(--border);
-		background: var(--bg);
-		color: var(--yellow);
-		cursor: pointer;
-		touch-action: manipulation;
+		min-height: var(--control-sm);
+		padding: var(--space-half) var(--space-3);
+		border: 1px solid var(--border-control);
+		background: var(--surface);
+		color: var(--accent);
 	}
 
-	.ui-tab:hover:not(:disabled) {
-		background: var(--ui-2);
+	.ui-tab:active:not(:disabled) {
+		background: var(--control-active);
 	}
 
 	.ui-tab[aria-selected='true'] {
-		border-color: var(--yellow);
-		background: var(--yellow);
-		color: var(--bg);
-	}
-
-	.ui-tab:focus-visible {
-		outline: 2px solid var(--tx);
-		outline-offset: 2px;
+		border-color: var(--accent);
+		background: var(--accent);
+		color: var(--on-accent);
 	}
 
 	.ui-tab:disabled {
-		color: var(--tx-2);
-		cursor: not-allowed;
+		color: var(--text-muted);
+	}
+
+	@media (hover: hover) {
+		.ui-tab:hover:not(:disabled, :active, [aria-selected='true']) {
+			background: var(--control-hover);
+		}
 	}
 
 	.ui-tabs-panel {
-		padding-top: 10px;
-	}
-
-	.ui-tabs-panel:focus-visible {
-		outline: 1px dashed var(--border);
-		outline-offset: 4px;
-	}
-
-	@media (max-width: 760px) {
-		.ui-tab {
-			min-height: 40px;
-			padding-inline: 12px;
-		}
+		padding-top: var(--space-2);
 	}
 </style>

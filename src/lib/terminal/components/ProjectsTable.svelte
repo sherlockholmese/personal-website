@@ -1,5 +1,9 @@
 <script lang="ts">
-	const projects = [
+	import { DataTable, Panel, type DataTableColumn } from '#lib/ui/index.ts';
+
+	type Project = { name: string; description: string; url: string };
+
+	const projects: Project[] = [
 		{
 			name: 'softmun-oss',
 			description: 'Open-source Model UN committee management software.',
@@ -16,34 +20,21 @@
 			url: 'https://github.com/sherlockholmestech/pwninit'
 		}
 	];
+
+	const columns: DataTableColumn<Project>[] = [
+		{ key: 'name', label: 'name', width: '20%' },
+		{ key: 'description', label: 'description', width: '36%' },
+		{ key: 'url', label: 'url', width: '44%', tone: 'info' }
+	];
 </script>
 
-<div class="my-[12px] border-y border-[var(--hard-border)] max-[760px]:my-[10px]">
-	<div
-		class="flex items-center justify-between gap-[12px] border-b border-[var(--border)] bg-[var(--bg-2)] px-[8px] py-[6px] font-bold text-[var(--yellow)] max-[760px]:grid max-[760px]:grid-cols-1 max-[760px]:gap-[2px]"
-	>
-		<span>projects</span>
-		<span>{projects.length} repos</span>
-	</div>
-
-	<div
-		class="grid grid-cols-[minmax(150px,0.25fr)_minmax(210px,0.45fr)_minmax(220px,0.55fr)] gap-[12px] border-b border-[var(--border)] px-[8px] py-[6px] text-[var(--green)] max-[760px]:hidden"
-	>
-		<span>name</span>
-		<span>description</span>
-		<span>url</span>
-	</div>
-
-	{#each projects as project (project.url)}
-		<a
-			href={project.url}
-			target="_blank"
-			rel="external noreferrer"
-			class="grid grid-cols-[minmax(150px,0.25fr)_minmax(210px,0.45fr)_minmax(220px,0.55fr)] gap-[12px] border-b border-[var(--border)] px-[8px] py-[8px] leading-[1.4] text-[var(--cyan)] no-underline last:border-b-0 hover:text-[var(--yellow)] max-[760px]:grid-cols-1 max-[760px]:gap-[3px] max-[760px]:py-[10px]"
-		>
-			<strong class="font-normal">{project.name}</strong>
-			<span class="min-w-0 text-[var(--tx)]">{project.description}</span>
-			<span class="min-w-0 [overflow-wrap:anywhere]">{project.url}</span>
-		</a>
-	{/each}
-</div>
+<Panel title="projects" meta={`${projects.length} repos`}>
+	<DataTable
+		label="projects"
+		{columns}
+		rows={projects}
+		rowKey={(project) => project.url}
+		href={(project) => project.url}
+		external
+	/>
+</Panel>

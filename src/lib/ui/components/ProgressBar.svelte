@@ -35,7 +35,7 @@
 	aria-label={label}
 	aria-valuemin={0}
 	aria-valuemax={max}
-	aria-valuenow={value}
+	aria-valuenow={Math.min(Math.max(value, 0), max)}
 	style:--ui-tone={toneColor[tone]}
 >
 	<span class="ui-progress-label">{label}</span>
@@ -57,13 +57,13 @@
 	}
 
 	.ui-progress-label {
-		color: var(--yellow);
+		color: var(--text-muted);
 	}
 
 	.ui-progress-bar {
 		max-width: 100%;
 		overflow: hidden;
-		color: var(--tx-2);
+		color: var(--text-muted);
 		white-space: pre;
 	}
 
@@ -72,11 +72,11 @@
 	}
 
 	.ui-progress-rest {
-		color: var(--border);
+		color: var(--text-muted);
 	}
 
 	.ui-progress-value {
-		color: var(--tx-2);
+		color: var(--text-muted);
 		font-variant-numeric: tabular-nums;
 	}
 </style>

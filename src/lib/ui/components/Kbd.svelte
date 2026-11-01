@@ -14,12 +14,12 @@
 	.ui-kbd {
 		display: inline-block;
 		min-width: 2ch;
-		padding: 0 5px;
+		padding: 0 var(--space-1);
 		border: 1px solid var(--border);
-		background: var(--bg-2);
-		box-shadow: inset 0 -1px 0 var(--ui-2);
-		color: var(--tx);
-		font-size: 13px;
+		background: var(--surface-raised);
+		box-shadow: inset 0 -1px 0 var(--control-hover);
+		color: var(--text);
+		font-size: var(--text-caption);
 		line-height: 1.45;
 		text-align: center;
 		white-space: nowrap;

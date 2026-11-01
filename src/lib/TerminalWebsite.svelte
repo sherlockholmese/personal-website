@@ -50,6 +50,7 @@
 	import RouteLinks from '#lib/terminal/components/RouteLinks.svelte';
 	import SocialLinks from '#lib/terminal/components/SocialLinks.svelte';
 	import WelcomeBanner from '#lib/terminal/components/WelcomeBanner.svelte';
+	import { Button, OutputLine, Prompt, TerminalPage, TerminalViewport } from '#lib/ui/index.ts';
 
 	const ABOUT_PATH = 'about';
 	const THEME_STORAGE_KEY = 'flexoki-theme';
@@ -99,22 +100,15 @@
 	let theme = $state<Theme>('dark');
 	let terminalViewport = $state<HTMLDivElement>();
 	let terminalScrollback = $state<HTMLDivElement>();
-	let terminalTitlebar = $state<HTMLDivElement>();
-	let terminalTitleMeasurer = $state<HTMLSpanElement>();
 	let promptInput = $state<HTMLInputElement>();
 	let fzfInput = $state<HTMLInputElement>();
 	let photographyClose = $state<HTMLButtonElement>();
 	let highlightedCode = $state<Record<string, string>>({});
 	let previewMarkdownByPath = $state<Record<string, string>>({});
 	let previewHighlightedCodeByKey = $state<Record<string, Record<string, string>>>({});
-	let titlebarWidth = $state(0);
-	let titleMeasurementReady = $state(false);
-	let displayedTerminalTitle = $state(TERMINAL_TITLE);
 	let mobileViewportHeight = $state<number>();
 	let mobileKeyboardOpen = $state(false);
-	let titleMeasureContext: CanvasRenderingContext2D | undefined;
 	const mobileShortcuts = ['home', ...helpfulCommands.filter((command) => command !== 'home')];
-	const TITLE_TRUNCATION_SUFFIX = '[...]';
 
 	let allPhotographs = $derived([
 		...data.photographs,
@@ -161,6 +155,13 @@
 		parseMarkdown(browserPreviewTokens, browserPreviewHighlightedCode)
 	);
 	let terminalTitleText = $derived(currentView === 'post' ? selectedPost.title : TERMINAL_TITLE);
+	let closeTerminalPanel = $derived(
+		currentView === 'post'
+			? closePostView
+			: photographyBrowserVisible
+				? closeActiveTerminalPanel
+				: undefined
+	);
 	let metaPost = $derived(loadedPost);
 	let metaTitle = $derived(metaPost ? `${metaPost.title} | ${SITE_TITLE}` : SITE_TITLE);
 	let metaDescription = $derived(metaPost?.description || SITE_DESCRIPTION);
@@ -184,29 +185,9 @@
 		void (async () => {
 			await tick();
 			focusPromptIfComfortable();
-			await document.fonts?.ready;
-			titleMeasurementReady = true;
 		})();
 
 		return stopWatchingMobileViewport;
-	});
-
-	$effect(() => {
-		if (!terminalTitlebar) return;
-
-		const updateTitlebarWidth = () => {
-			titlebarWidth = terminalTitlebar?.clientWidth ?? 0;
-		};
-		const resizeObserver = new ResizeObserver(updateTitlebarWidth);
-		resizeObserver.observe(terminalTitlebar);
-		updateTitlebarWidth();
-
-		return () => resizeObserver.disconnect();
-	});
-
-	$effect(() => {
-		if (!titleMeasurementReady) return;
-		displayedTerminalTitle = truncateTerminalTitle(terminalTitleText, titlebarWidth);
 	});
 
 	$effect(() => {
@@ -374,60 +355,6 @@
 
 	function dismissMobileKeyboard() {
 		promptInput?.blur();
-	}
-
-	function truncateTerminalTitle(title: string, width: number) {
-		if (width <= 0) return title;
-
-		const measure = terminalTitleMeasure();
-		if (!measure) return title;
-
-		const maxWidth = getTerminalTitleMaxWidth(width);
-		if (measure(title) <= maxWidth) return title;
-
-		if (measure(TITLE_TRUNCATION_SUFFIX) > maxWidth) {
-			return TITLE_TRUNCATION_SUFFIX;
-		}
-
-		let low = 0;
-		let high = title.length;
-
-		while (low < high) {
-			const middle = Math.ceil((low + high) / 2);
-			const candidate = `${title.slice(0, middle).trimEnd()}${TITLE_TRUNCATION_SUFFIX}`;
-
-			if (measure(candidate) <= maxWidth) {
-				low = middle;
-			} else {
-				high = middle - 1;
-			}
-		}
-
-		return `${title.slice(0, low).trimEnd()}${TITLE_TRUNCATION_SUFFIX}`;
-	}
-
-	function getTerminalTitleMaxWidth(width: number) {
-		if (isMobileViewport()) {
-			return Math.max(0, width - 42);
-		}
-
-		return width * 0.75;
-	}
-
-	function terminalTitleMeasure() {
-		if (!terminalTitleMeasurer) return;
-		const style = getComputedStyle(terminalTitleMeasurer);
-		const context =
-			titleMeasureContext ??
-			(document.createElement('canvas').getContext('2d') as CanvasRenderingContext2D | null);
-
-		if (!context) return 0;
-
-		titleMeasureContext = context;
-		context.font = style.font;
-
-		const padding = Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight);
-		return (title: string) => Math.ceil(context.measureText(title).width + padding);
 	}
 
 	function handlePromptKeydown(event: KeyboardEvent) {
@@ -899,157 +826,152 @@
 	<meta name="twitter:description" content={metaDescription} />
 </svelte:head>
 
-<main
-	class="workspace terminal-workspace"
-	class:light={theme === 'light'}
-	class:terminal-keyboard-open={mobileKeyboardOpen}
-	style={mobileViewportHeight
-		? `--terminal-mobile-viewport-height: ${mobileViewportHeight}px`
-		: undefined}
+<TerminalPage
+	title={terminalTitleText}
+	padded={false}
+	onClose={closeTerminalPanel}
+	closeLabel={currentView === 'post' ? 'close blog reader' : 'Close photography gallery'}
+	bind:closeRef={photographyClose}
+	keyboardOpen={mobileKeyboardOpen}
+	viewportHeight={mobileViewportHeight}
 >
-	<section class="terminal-shell">
-		<article class="terminal-window">
-			<div class="terminal-titlebar" bind:this={terminalTitlebar}>
-				<span class="terminal-title" title={terminalTitleText}>
-					{displayedTerminalTitle}
-				</span>
-				<span
-					class="terminal-title terminal-title-measurer"
-					aria-hidden="true"
-					bind:this={terminalTitleMeasurer}
-				></span>
-				{#if currentView === 'post'}
-					<button
-						type="button"
-						class="terminal-close-button"
-						aria-label="close blog reader"
-						onclick={closePostView}
-					>
-						X
-					</button>
-				{:else if photographyBrowserVisible}
-					<button
-						type="button"
-						class="terminal-close-button terminal-panel-close-button"
-						aria-label="Close photography gallery"
-						bind:this={photographyClose}
-						onclick={closeActiveTerminalPanel}
-					>
-						X
-					</button>
-				{/if}
-			</div>
-			{#if currentView === 'post'}
-				{#if selectedFullPost}
-					<PostReader post={selectedFullPost} blocks={postViewBlocks} />
+	{#if currentView === 'post'}
+		{#if selectedFullPost}
+			<PostReader post={selectedFullPost} blocks={postViewBlocks} />
+		{:else}
+			<TerminalViewport>
+				<OutputLine kind="muted" text={`loading ${selectedPost.path}...`} />
+			</TerminalViewport>
+		{/if}
+	{:else}
+		<TerminalViewport
+			bind:ref={terminalViewport}
+			bind:scrollbackRef={terminalScrollback}
+			live
+			contained={blogBrowserVisible || photographyBrowserVisible}
+			onpointerdown={focusPrompt}
+		>
+			{#each history as line, index (index)}
+				{#if line.kind === 'prompt'}
+					<Prompt cwd={line.cwd} command={line.command} collapse />
+				{:else if line.kind === 'links'}
+					<RouteLinks path={line.path} entries={line.entries} />
+				{:else if line.kind === 'socials'}
+					<SocialLinks />
+				{:else if line.kind === 'projects'}
+					<ProjectsTable />
+				{:else if line.kind === 'banner'}
+					<WelcomeBanner {posts} {asciiSeed} onCommand={runShortcut} />
+				{:else if line.kind === 'help'}
+					<HelpPanel />
+				{:else if line.kind === 'not-found'}
+					<NotFoundPanel path={line.path} onCommand={runShortcut} />
 				{:else}
-					<div class="terminal-viewport">
-						<pre
-							class="terminal-output-line text-[var(--tx-2)]">loading {selectedPost.path}...</pre>
+					<OutputLine kind={line.kind} text={line.text} />
+				{/if}
+			{/each}
+
+			{#snippet after()}
+				{#if blogBrowserVisible}
+					<BlogBrowser
+						bind:query={fzfQuery}
+						bind:inputRef={fzfInput}
+						{posts}
+						results={fzfResults}
+						selectedIndex={fzfIndex}
+						selectedPost={browserSelectedPost}
+						previewBlocks={browserPreviewBlocks}
+						sort={blogSort}
+						onQueryInput={handleQueryInput}
+						onKeydown={handleFzfKeydown}
+						onSortChange={handleBlogSortChange}
+						onSelect={selectFzfResult}
+						onOpen={openFzfSelection}
+						onClose={closeBlogSearch}
+					/>
+				{/if}
+
+				{#if photographyBrowserVisible}
+					<PhotographyGallery
+						photographs={data.photographs}
+						headerPhotograph={data.headerPhotograph}
+						unavailable={data.photographyUnavailable}
+						initialPhotoSlug={photographyPhotoSlug}
+						onClose={closePhotographyBrowser}
+						onPhotoOpen={openPhotographyPhotograph}
+						onPhotoClose={closePhotographyPhotograph}
+					/>
+				{/if}
+
+				{#if !blogBrowserVisible && !photographyBrowserVisible}
+					<div class="command-dock" class:command-dock-keyboard={mobileKeyboardOpen}>
+						<div class="command-shortcuts" aria-label="quick commands">
+							{#each mobileShortcuts as command (command)}
+								<Button
+									size="sm"
+									onpointerdown={preservePromptFocus}
+									onclick={() => runShortcut(command)}
+								>
+									{command}
+								</Button>
+							{/each}
+						</div>
+
+						<PromptForm
+							cwd={formatPromptPath(cwd)}
+							bind:input
+							bind:inputRef={promptInput}
+							keyboardOpen={mobileKeyboardOpen}
+							onKeydown={handlePromptKeydown}
+							onSubmit={submit}
+							onAutocomplete={autocompletePrompt}
+							onDismissKeyboard={dismissMobileKeyboard}
+						/>
 					</div>
 				{/if}
-			{:else}
-				<div
-					bind:this={terminalViewport}
-					class="terminal-viewport"
-					aria-live="polite"
-					role="application"
-					onpointerdown={focusPrompt}
-				>
-					<div bind:this={terminalScrollback} class="terminal-scrollback">
-						{#each history as line, index (index)}
-							{#if line.kind === 'prompt'}
-								<div>
-									<div class="leading-[1.45] text-[var(--tx)]">
-										<span
-											class="text-[var(--cyan)] max-[760px]:text-[0px] max-[760px]:after:text-[16px] max-[760px]:after:content-['~']"
-										>
-											{line.cwd}
-										</span>
-									</div>
-									<div class="terminal-prompt-line">
-										<span class="text-[var(--yellow)]">❯</span>
-										<span>{line.command}</span>
-									</div>
-								</div>
-							{:else if line.kind === 'links'}
-								<RouteLinks path={line.path} entries={line.entries} />
-							{:else if line.kind === 'socials'}
-								<SocialLinks />
-							{:else if line.kind === 'projects'}
-								<ProjectsTable />
-							{:else if line.kind === 'banner'}
-								<WelcomeBanner {posts} {asciiSeed} onCommand={runShortcut} />
-							{:else if line.kind === 'help'}
-								<HelpPanel />
-							{:else if line.kind === 'not-found'}
-								<NotFoundPanel path={line.path} onCommand={runShortcut} />
-							{:else}
-								<pre
-									class={`terminal-output-line ${line.kind === 'success' ? 'text-[var(--green)]' : line.kind === 'error' ? 'text-[var(--red)]' : line.kind === 'muted' ? 'text-[var(--tx-2)]' : ''}`}>{line.text}</pre>
-							{/if}
-						{/each}
-					</div>
+			{/snippet}
+		</TerminalViewport>
+	{/if}
+</TerminalPage>
 
-					{#if blogBrowserVisible}
-						<BlogBrowser
-							bind:query={fzfQuery}
-							bind:inputRef={fzfInput}
-							{posts}
-							results={fzfResults}
-							selectedIndex={fzfIndex}
-							selectedPost={browserSelectedPost}
-							previewBlocks={browserPreviewBlocks}
-							sort={blogSort}
-							onQueryInput={handleQueryInput}
-							onKeydown={handleFzfKeydown}
-							onSortChange={handleBlogSortChange}
-							onSelect={selectFzfResult}
-							onOpen={openFzfSelection}
-							onClose={closeBlogSearch}
-						/>
-					{/if}
+<style>
+	.command-dock {
+		background: var(--surface);
+	}
 
-					{#if photographyBrowserVisible}
-						<PhotographyGallery
-							photographs={data.photographs}
-							headerPhotograph={data.headerPhotograph}
-							unavailable={data.photographyUnavailable}
-							initialPhotoSlug={photographyPhotoSlug}
-							onClose={closePhotographyBrowser}
-							onPhotoOpen={openPhotographyPhotograph}
-							onPhotoClose={closePhotographyPhotograph}
-						/>
-					{/if}
+	.command-shortcuts {
+		display: none;
+	}
 
-					{#if !blogBrowserVisible && !photographyBrowserVisible}
-						<div class="terminal-command-dock">
-							<div class="terminal-shortcuts" aria-label="quick commands">
-								{#each mobileShortcuts as command (command)}
-									<button
-										type="button"
-										class="terminal-shortcut-button"
-										onpointerdown={preservePromptFocus}
-										onclick={() => runShortcut(command)}
-									>
-										{command}
-									</button>
-								{/each}
-							</div>
+	@media (max-width: 760px) {
+		.command-dock {
+			z-index: var(--layer-sticky);
+			padding: var(--space-2) var(--space-2) max(var(--space-2), env(safe-area-inset-bottom));
+			border-top: 1px solid var(--border);
+		}
 
-							<PromptForm
-								cwd={formatPromptPath(cwd)}
-								bind:input
-								bind:inputRef={promptInput}
-								onKeydown={handlePromptKeydown}
-								onSubmit={submit}
-								onAutocomplete={autocompletePrompt}
-								onDismissKeyboard={dismissMobileKeyboard}
-							/>
-						</div>
-					{/if}
-				</div>
-			{/if}
-		</article>
-	</section>
-</main>
+		.command-dock-keyboard {
+			padding-block: var(--space-1);
+		}
+
+		.command-shortcuts {
+			display: flex;
+			flex-wrap: nowrap;
+			gap: var(--space-2);
+			margin-bottom: var(--space-2);
+			padding-block: var(--space-1);
+			overflow-x: auto;
+			overscroll-behavior-inline: contain;
+			scrollbar-width: none;
+		}
+
+		.command-shortcuts::-webkit-scrollbar {
+			display: none;
+		}
+
+		.command-dock-keyboard .command-shortcuts {
+			margin-bottom: var(--space-half);
+			padding-block: var(--space-half);
+		}
+	}
+</style>

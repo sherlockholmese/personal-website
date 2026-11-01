@@ -24,8 +24,9 @@ export type KeyValueItem = {
 
 export type LinkItem = {
 	label: string;
-	href: string;
-	/** Text shown in the value column; defaults to `href`. */
+	/** Rows without `href` render through the `LinkList` `row` snippet. */
+	href?: string;
+	/** Text shown in the value column; defaults to `href`. An empty string hides the column. */
 	value?: string;
 	external?: boolean;
 };
@@ -33,9 +34,18 @@ export type LinkItem = {
 export type DataTableColumn<Row> = {
 	key: string;
 	label: string;
-	/** Any CSS grid track size, for example `12ch` or `minmax(0, 2fr)`. */
+	/** Any CSS length or percentage for the column. */
 	width?: string;
 	/** Reads the cell text when no `cell` snippet is supplied. */
 	value?: (row: Row) => string | number;
 	tone?: Tone;
+};
+
+export type LightboxImage = {
+	src: string;
+	alt: string;
+	width?: number;
+	height?: number;
+	/** Open zoomed in, centered on this point (0–1 ratios of the image). */
+	origin?: { x: number; y: number };
 };

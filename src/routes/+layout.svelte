@@ -21,6 +21,4 @@
 	/>
 </svelte:head>
 {@render children()}
-<div class="workspace cookie-layer">
-	<CookieBanner bind:this={cookieBanner} dismissed={data.cookieNoticeDismissed} />
-</div>
+<CookieBanner bind:this={cookieBanner} dismissed={data.cookieNoticeDismissed} />

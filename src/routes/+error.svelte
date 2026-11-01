@@ -2,6 +2,7 @@
 	import { page } from '$app/state';
 	import { SITE_TITLE } from '#lib/site.ts';
 	import NotFoundPanel from '#lib/terminal/components/NotFoundPanel.svelte';
+	import { TerminalPage } from '#lib/ui/index.ts';
 </script>
 
 <svelte:head>
@@ -12,17 +13,6 @@
 	/>
 </svelte:head>
 
-<main class="workspace terminal-workspace">
-	<section class="terminal-shell">
-		<article class="terminal-window">
-			<div class="terminal-titlebar">
-				<span class="terminal-title">{SITE_TITLE} // {page.status}</span>
-			</div>
-			<div class="terminal-viewport">
-				<div class="terminal-scrollback">
-					<NotFoundPanel path={page.url.pathname} />
-				</div>
-			</div>
-		</article>
-	</section>
-</main>
+<TerminalPage title={`${SITE_TITLE} // ${page.status}`}>
+	<NotFoundPanel path={page.url.pathname} status={page.status} />
+</TerminalPage>

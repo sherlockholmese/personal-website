@@ -1,8 +1,20 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import {
+		Button,
+		Chevron,
+		Heading,
+		KeyValueList,
+		KeyValueRow,
+		Lightbox,
+		Prose,
+		TagList,
+		Text,
+		type LightboxImage
+	} from '#lib/ui/index.ts';
 	import type { BlogPost, MdBlock } from '../types';
 	import { formatPostDate } from '../date';
-	import { centerElementPoint, pointRatio } from '../geometry';
+	import { pointRatio } from '../geometry';
 	import MarkdownBlocks from './MarkdownBlocks.svelte';
 
 	type TocItem = {
@@ -14,10 +26,7 @@
 	let { post, blocks }: { post: BlogPost; blocks: MdBlock[] } = $props();
 	let contentViewport = $state<HTMLDivElement>();
 	let mobileTocOpen = $state(false);
-	let zoomedImage = $state<{ src: string; alt: string } | null>(null);
-	let imageZoomLevel = $state(0);
-	let imageZoomScroll = $state<HTMLDivElement>();
-	let imageZoomTarget = $state<HTMLImageElement>();
+	let zoomedImage = $state<LightboxImage>();
 	let headingElements = $state<HTMLElement[]>([]);
 	let headingOffsets = $state<number[]>([]);
 	let scrollFrame: number | undefined;
@@ -32,6 +41,11 @@
 			}))
 	]);
 	let activeHeading = $derived(toc[0]?.id ?? '');
+	// The window title already names the post, so the bar only reports sections below it.
+	let currentSection = $derived(
+		activeHeading === toc[0]?.id ? '' : toc.find((item) => item.id === activeHeading)?.text
+	);
+	let tocToggle = $state<HTMLElement>();
 
 	function handleScroll() {
 		if (scrollFrame !== undefined) return;
@@ -53,6 +67,13 @@
 		mobileTocOpen = false;
 	}
 
+	function handleTocKeydown(event: KeyboardEvent) {
+		if (event.key !== 'Escape' || !mobileTocOpen) return;
+		event.preventDefault();
+		mobileTocOpen = false;
+		tocToggle?.focus();
+	}
+
 	function headingScrollOffset() {
 		if (!contentViewport) return 0;
 
@@ -61,18 +82,8 @@
 	}
 
 	function tocDepth(level: number) {
-		return Math.min(4, Math.max(0, level - 1));
+		return Math.min(3, Math.max(0, level - 1));
 	}
-
-	const tocDepthClasses = [
-		'text-[var(--tx)] font-bold',
-		'mt-[2px] pl-[20px] border-l border-[var(--border)] text-[14px]',
-		'mt-[4px] pl-[36px] border-l border-[var(--border)] text-[13px]',
-		'mt-[4px] pl-[52px] border-l border-[var(--border)] text-[12px]',
-		'mt-[4px] pl-[52px] border-l border-[var(--border)] text-[12px]'
-	];
-	const imageZoomClasses = ['image-zoom-level-1', 'image-zoom-level-2'];
-
 	$effect(() => {
 		const viewport = contentViewport;
 		const currentBlocks = blocks;
@@ -161,7 +172,7 @@
 	function decorateMarkdownImages() {
 		if (!contentViewport || !blocks.length) return;
 
-		const images = contentViewport.querySelectorAll<HTMLImageElement>('.terminal-prose-body img');
+		const images = contentViewport.querySelectorAll<HTMLImageElement>('.ui-prose-body img');
 		for (const image of images) {
 			image.tabIndex = 0;
 			image.setAttribute('role', 'button');
@@ -171,17 +182,15 @@
 
 	function imageFromTarget(target: EventTarget | null) {
 		if (!(target instanceof Element)) return null;
-		return target.closest<HTMLImageElement>('.terminal-prose-body img');
+		return target.closest<HTMLImageElement>('.ui-prose-body img');
 	}
 
-	async function openImageZoom(image: HTMLImageElement, xRatio = 0.5, yRatio = 0.5) {
+	function openImageZoom(image: HTMLImageElement, x = 0.5, y = 0.5) {
 		zoomedImage = {
 			src: image.currentSrc || image.src,
-			alt: image.alt || 'Zoomed post image'
+			alt: image.alt || 'Zoomed post image',
+			origin: { x, y }
 		};
-		imageZoomLevel = 0;
-		await tick();
-		centerZoomPoint(xRatio, yRatio);
 	}
 
 	function handleContentClick(event: MouseEvent) {
@@ -191,7 +200,7 @@
 		event.preventDefault();
 		const rect = image.getBoundingClientRect();
 		const point = pointRatio(rect, event.clientX, event.clientY);
-		void openImageZoom(image, point.x, point.y);
+		openImageZoom(image, point.x, point.y);
 	}
 
 	function handleContentKeydown(event: KeyboardEvent) {
@@ -201,135 +210,289 @@
 		if (!image) return;
 
 		event.preventDefault();
-		void openImageZoom(image);
-	}
-
-	function closeImageZoom() {
-		zoomedImage = null;
-		imageZoomLevel = 0;
-	}
-
-	async function toggleImageZoom(event: MouseEvent) {
-		const targetRect = imageZoomTarget?.getBoundingClientRect();
-		const point = targetRect ? pointRatio(targetRect, event.clientX, event.clientY) : null;
-
-		imageZoomLevel = imageZoomLevel === 0 ? 1 : 0;
-		await tick();
-		centerZoomPoint(point?.x ?? 0.5, point?.y ?? 0.5);
-	}
-
-	function handleWindowKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape' && zoomedImage) {
-			closeImageZoom();
-		}
-	}
-
-	function centerZoomPoint(xRatio: number, yRatio: number) {
-		if (!imageZoomScroll || !imageZoomTarget) return;
-		centerElementPoint(imageZoomScroll, imageZoomTarget, xRatio, yRatio);
+		openImageZoom(image);
 	}
 </script>
 
-<svelte:window onkeydown={handleWindowKeydown} />
-
 <article class="post-reader">
-	<div class="post-toc-bar">
-		<button
-			type="button"
-			aria-expanded={mobileTocOpen}
-			aria-controls="mobile-post-toc"
-			onclick={() => (mobileTocOpen = !mobileTocOpen)}
-			class="post-toc-toggle"
-		>
-			contents
-		</button>
-	</div>
+	{#if toc.length > 1}
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="post-toc-region" onkeydown={handleTocKeydown}>
+			<div class="post-toc-bar">
+				<Button
+					bind:ref={tocToggle}
+					size="sm"
+					block
+					align="start"
+					aria-expanded={mobileTocOpen}
+					aria-controls="post-toc"
+					onclick={() => (mobileTocOpen = !mobileTocOpen)}
+				>
+					<span class="post-toc-toggle-label">contents</span>
+					{#if currentSection}
+						<span class="post-toc-current">{currentSection}</span>
+					{/if}
+					<Chevron class="post-toc-chevron" open={mobileTocOpen} />
+				</Button>
+			</div>
 
-	<nav
-		id="mobile-post-toc"
-		class:post-toc-open={mobileTocOpen}
-		class="post-toc"
-		aria-label="table of contents"
-	>
-		<span class="post-toc-heading">contents</span>
-		{#each toc as heading (heading.id)}
-			<button
-				type="button"
-				class={`post-toc-item ${tocDepthClasses[tocDepth(heading.level)]} ${heading.id === activeHeading ? 'bg-[var(--bg-2)] text-[var(--yellow)]' : ''}`}
-				onclick={() => scrollToHeading(heading.id)}
+			<nav
+				id="post-toc"
+				class:post-toc-open={mobileTocOpen}
+				class="post-toc ui-scroll"
+				aria-label="table of contents"
 			>
-				{heading.text}
-			</button>
-		{/each}
-	</nav>
+				<span class="post-toc-heading">contents</span>
+				{#each toc as heading (heading.id)}
+					<button
+						type="button"
+						class={`post-toc-item post-toc-depth-${tocDepth(heading.level)}`}
+						aria-current={heading.id === activeHeading ? 'location' : undefined}
+						onclick={() => scrollToHeading(heading.id)}
+					>
+						{heading.text}
+					</button>
+				{/each}
+			</nav>
+		</div>
+	{/if}
 
 	<div
 		bind:this={contentViewport}
-		class="post-content-viewport"
+		class="post-content-viewport ui-scroll"
 		role="region"
 		aria-label="post content"
 		onscroll={handleScroll}
+		onpointerdown={() => (mobileTocOpen = false)}
 	>
 		<div class="post-content">
 			<header class="post-header">
-				<h1 id="post-top" data-heading-id="post-top" class="post-title">
-					{post.title}
-				</h1>
+				<Heading level={1} id="post-top" data-heading-id="post-top">{post.title}</Heading>
 				{#if post.description}
-					<p class="post-description">
-						{post.description}
-					</p>
+					<Text class="post-description" tone="muted" justify>{post.description}</Text>
 				{/if}
-				<div class="post-meta">
-					<div class="post-meta-row">
-						<span class="post-meta-label">date</span>
-						<strong class="post-meta-value">
-							{formatPostDate(post.date)}
-						</strong>
-					</div>
-					<div class="post-meta-row">
-						<span class="post-meta-label">tags</span>
-						<strong class="post-meta-value">
-							{#each post.tags as tag (tag)}
-								<span>#{tag}</span>
-							{/each}
-						</strong>
-					</div>
-				</div>
+				<KeyValueList class="post-meta" muted>
+					<KeyValueRow label="date">{formatPostDate(post.date)}</KeyValueRow>
+					<KeyValueRow label="tags"><TagList tags={post.tags} /></KeyValueRow>
+				</KeyValueList>
 			</header>
-			<div class="terminal-prose terminal-prose-body">
+			<Prose>
 				<MarkdownBlocks {blocks} />
-			</div>
+			</Prose>
 		</div>
 	</div>
 
-	{#if zoomedImage}
-		<div class="image-zoom-overlay" role="dialog" aria-modal="true" aria-label="Zoomed image">
-			<div bind:this={imageZoomScroll} class="image-zoom-scroll">
-				<div class="image-zoom-stage">
-					<button
-						type="button"
-						class="image-zoom-frame"
-						aria-label="Toggle image zoom"
-						onclick={toggleImageZoom}
-					>
-						<img
-							bind:this={imageZoomTarget}
-							src={zoomedImage.src}
-							alt={zoomedImage.alt}
-							class={`image-zoom-target ${imageZoomClasses[imageZoomLevel]}`}
-						/>
-					</button>
-				</div>
-			</div>
-			<button
-				type="button"
-				class="image-zoom-close"
-				aria-label="Close zoomed image"
-				onclick={closeImageZoom}
-			>
-				X
-			</button>
-		</div>
-	{/if}
+	<Lightbox
+		image={zoomedImage}
+		label="Zoomed image"
+		closeLabel="Close zoomed image"
+		onClose={() => (zoomedImage = undefined)}
+	/>
 </article>
+
+<style>
+	.post-reader {
+		--content-inline-padding: var(--space-4);
+		--ui-anchor-offset: var(--space-6);
+		position: relative;
+		display: flex;
+		height: 100%;
+		min-height: 0;
+		flex: 1;
+		flex-direction: column;
+		overflow: hidden;
+	}
+
+	.post-toc-region {
+		display: contents;
+	}
+
+	.post-toc-bar {
+		display: none;
+	}
+
+	.post-toc-toggle-label {
+		flex: none;
+	}
+
+	.post-toc-current {
+		min-width: 0;
+		overflow: hidden;
+		color: var(--text-muted);
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.post-toc-bar :global(.post-toc-chevron) {
+		margin-inline-start: auto;
+	}
+
+	.post-toc {
+		position: absolute;
+		top: 50%;
+		left: max(var(--space-4), calc(50% - 43ch - 238px));
+		z-index: var(--layer-raised);
+		width: 200px;
+		max-height: 62vh;
+		padding: var(--space-2);
+		overflow: auto;
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--surface) 94%, transparent);
+		transform: translateY(-50%);
+	}
+
+	.post-toc-heading {
+		display: block;
+		margin-bottom: var(--space-2);
+		color: var(--accent);
+		font-weight: 700;
+	}
+
+	.post-toc-item {
+		position: relative;
+		display: block;
+		width: 100%;
+		min-height: var(--target-min);
+		padding: var(--space-half) var(--space-1);
+		border-left: 1px solid transparent;
+		background: transparent;
+		color: var(--text-muted);
+		text-align: left;
+	}
+
+	.post-toc-item:hover,
+	.post-toc-item[aria-current='location'] {
+		background: var(--surface-raised);
+		color: var(--accent);
+	}
+
+	.post-toc-depth-0 {
+		font-weight: 700;
+	}
+
+	.post-toc-depth-0:not([aria-current='location'], :hover) {
+		color: var(--text);
+	}
+
+	.post-toc-depth-1,
+	.post-toc-depth-2,
+	.post-toc-depth-3 {
+		margin-top: var(--space-half);
+		border-left-color: var(--border);
+		font-size: var(--text-caption);
+	}
+
+	.post-toc-depth-1 {
+		padding-left: var(--space-4);
+	}
+
+	.post-toc-depth-2 {
+		padding-left: var(--space-8);
+	}
+
+	.post-toc-depth-3 {
+		padding-left: calc(var(--space-8) + var(--space-4));
+	}
+
+	@media (max-width: 1400px) {
+		.post-toc-region {
+			position: relative;
+			z-index: var(--layer-sticky);
+			display: block;
+			width: 100%;
+			max-width: 86ch;
+			flex: none;
+			margin-inline: auto;
+			/* Clears the close button that overhangs the window border. */
+			padding: calc(var(--control-close) / 2 + var(--space-1)) var(--content-inline-padding) 0;
+		}
+
+		.post-toc-bar {
+			display: block;
+		}
+
+		.post-toc {
+			display: none;
+		}
+
+		.post-toc.post-toc-open {
+			top: 100%;
+			right: var(--content-inline-padding);
+			left: var(--content-inline-padding);
+			display: block;
+			width: auto;
+			max-height: 50vh;
+			padding: var(--space-1);
+			border-color: var(--border-control);
+			border-top: 0;
+			background: var(--surface);
+			box-shadow: var(--shadow-floating);
+			transform: none;
+		}
+
+		.post-toc-heading {
+			display: none;
+		}
+
+		.post-toc-item {
+			padding-block: var(--space-1);
+		}
+
+		@media (prefers-reduced-motion: no-preference) {
+			.post-toc.post-toc-open {
+				animation: motion-drop var(--motion-fast) var(--ease-enter);
+			}
+		}
+	}
+
+	.post-content-viewport {
+		width: 100%;
+		min-width: 0;
+		min-height: 0;
+		flex: 1;
+		overflow: auto;
+		padding-bottom: var(--space-8);
+		scroll-padding-top: var(--ui-anchor-offset);
+	}
+
+	.post-content {
+		width: 100%;
+		min-width: 0;
+		max-width: 86ch;
+		margin-inline: auto;
+		padding: var(--space-4) var(--content-inline-padding) 56px;
+		font-size: var(--text-reading);
+	}
+
+	.post-content :global(.ui-prose-body :where(h1, h2, h3)) {
+		scroll-margin-top: var(--ui-anchor-offset);
+	}
+
+	.post-header :global(.post-description) {
+		max-width: 80ch;
+		font-size: inherit;
+	}
+
+	.post-header :global(.post-meta) {
+		margin-bottom: var(--space-4);
+		font-size: inherit;
+	}
+
+	@media (max-width: 760px) {
+		.post-reader {
+			--content-inline-padding: var(--space-2);
+			--ui-anchor-offset: var(--space-4);
+		}
+
+		.post-content {
+			padding-top: var(--space-3);
+			padding-bottom: var(--space-8);
+		}
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.post-reader {
+			animation: motion-rise var(--motion-normal) var(--ease-enter);
+		}
+	}
+</style>

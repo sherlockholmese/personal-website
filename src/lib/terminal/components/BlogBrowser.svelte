@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { Panel, Prose, Select, TagList, TextField, EmptyState } from '#lib/ui/index.ts';
 	import { blogSortOptions, type BlogPostMeta, type BlogSort, type MdBlock } from '../types';
 	import { formatPostDate } from '../date';
 	import { shouldHandleFuzzyPickerKeydown } from '../fuzzy-picker';
@@ -38,13 +39,9 @@
 		onClose: () => void;
 	} = $props();
 
-	let sortOpen = $state(false);
 	let resultsViewport = $state<HTMLDivElement>();
 	let canScrollUp = $state(false);
 	let canScrollDown = $state(false);
-	let sortLabel = $derived(
-		blogSortOptions.find((option) => option.value === sort)?.label ?? blogSortOptions[0].label
-	);
 
 	$effect(() => {
 		const viewport = resultsViewport;
@@ -101,31 +98,6 @@
 		updateScrollIndicators();
 	}
 
-	function toggleSortMenu() {
-		sortOpen = !sortOpen;
-	}
-
-	function handleSortFocusOut(event: FocusEvent) {
-		const next = event.relatedTarget as Node | null;
-		const currentTarget = event.currentTarget as HTMLElement | null;
-		if (!currentTarget) return;
-		if (!next || !currentTarget.contains(next)) {
-			sortOpen = false;
-		}
-	}
-
-	function handleSortKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape') {
-			event.preventDefault();
-			sortOpen = false;
-		}
-	}
-
-	function selectSort(nextSort: BlogSort) {
-		onSortChange(nextSort);
-		sortOpen = false;
-	}
-
 	function handleResultClick(index: number) {
 		onSelect(index);
 		if (isMobileViewport()) {
@@ -149,69 +121,28 @@
 
 <svelte:window onkeydown={handleWindowKeydown} />
 
-<div class="blog-browser">
-	<div class="blog-browser-header">
-		<span>~/blog</span>
-		<span class="blog-browser-header-meta">{results.length}/{posts.length} posts</span>
-		<button
-			type="button"
-			class="blog-browser-close"
-			aria-label="close blog browser"
-			onclick={onClose}
-		>
-			X
-		</button>
-	</div>
+<Panel
+	class="blog-browser"
+	variant="boxed"
+	fill
+	title="~/blog"
+	meta={`${results.length}/${posts.length} posts`}
+	closeLabel="close blog browser"
+	{onClose}
+>
 	<div class="blog-browser-toolbar">
-		<label class="blog-browser-field blog-browser-field-query">
-			<span class="text-[var(--tx-2)]">query</span>
-			<input
-				bind:this={inputRef}
-				bind:value={query}
-				aria-label="search blog posts"
-				placeholder="type to filter posts"
-				autocomplete="off"
-				autocapitalize="none"
-				autocorrect="off"
-				enterkeyhint="search"
-				spellcheck={false}
-				oninput={onQueryInput}
-				class="blog-browser-input"
-			/>
-		</label>
-		<label class="blog-browser-field blog-browser-field-sort">
-			<span class="text-[var(--tx-2)]">sort</span>
-			<div class="relative min-w-0" onfocusout={handleSortFocusOut}>
-				<button
-					type="button"
-					class="blog-browser-sort-button"
-					aria-haspopup="listbox"
-					aria-expanded={sortOpen}
-					aria-controls="fzf-sort-menu"
-					onclick={toggleSortMenu}
-					onkeydown={handleSortKeydown}
-				>
-					<span>{sortLabel}</span>
-					<span class="text-[12px] text-[var(--yellow)]" aria-hidden="true">v</span>
-				</button>
-				{#if sortOpen}
-					<div id="fzf-sort-menu" class="blog-browser-sort-menu" role="listbox">
-						{#each blogSortOptions as option (option.value)}
-							<button
-								type="button"
-								class={`blog-browser-sort-option ${option.value === sort ? 'bg-[var(--yellow)] text-[var(--bg)]' : 'text-[var(--tx)]'}`}
-								role="option"
-								aria-selected={option.value === sort}
-								onclick={() => selectSort(option.value)}
-								onkeydown={handleSortKeydown}
-							>
-								{option.label}
-							</button>
-						{/each}
-					</div>
-				{/if}
-			</div>
-		</label>
+		<TextField
+			bind:ref={inputRef}
+			bind:value={query}
+			label="query"
+			aria-label="search blog posts"
+			placeholder="type to filter posts"
+			autocomplete="off"
+			autocorrect="off"
+			enterkeyhint="search"
+			oninput={onQueryInput}
+		/>
+		<Select label="sort" value={sort} options={blogSortOptions} onChange={onSortChange} />
 	</div>
 	<div class="blog-browser-grid">
 		<div class="blog-browser-results-shell">
@@ -225,7 +156,7 @@
 			{/if}
 			<div
 				bind:this={resultsViewport}
-				class="blog-browser-results"
+				class="blog-browser-results ui-scroll"
 				style="counter-reset: post-row"
 				onscroll={updateScrollIndicators}
 			>
@@ -233,37 +164,21 @@
 					{#each results as post, index (post.path)}
 						<button
 							type="button"
-							class={`blog-browser-row ${index === selectedIndex ? 'blog-browser-row-selected' : 'text-[var(--tx)]'}`}
+							class="blog-browser-row"
+							class:blog-browser-row-selected={index === selectedIndex}
+							aria-current={index === selectedIndex ? 'true' : undefined}
 							style="counter-increment: post-row"
 							onclick={() => handleResultClick(index)}
 							ondblclick={() => onOpen(index)}
 						>
-							<span
-								class="min-w-0 [overflow-wrap:anywhere] whitespace-normal max-[760px]:pointer-events-none max-[760px]:font-bold"
-							>
-								{post.title}
-							</span>
-							<span
-								class="min-w-0 whitespace-normal opacity-[0.85] max-[760px]:pointer-events-none"
-							>
-								{formatPostDate(post.date)}
-							</span>
-							<span
-								class="flex min-w-0 flex-wrap gap-[6px] whitespace-normal opacity-[0.75] max-[760px]:pointer-events-none"
-							>
-								{#each post.tags as tag (tag)}
-									<span class="min-w-0 [overflow-wrap:anywhere]">#{tag}</span>
-								{/each}
-							</span>
-							<span
-								class="min-w-0 [overflow-wrap:anywhere] whitespace-normal opacity-[0.55] max-[760px]:pointer-events-none max-[760px]:before:content-['cat_']"
-							>
-								{post.path}
-							</span>
+							<span class="blog-browser-title">{post.title}</span>
+							<span class="blog-browser-date">{formatPostDate(post.date)}</span>
+							<TagList class="blog-browser-tags" tags={post.tags} />
+							<span class="blog-browser-path">{post.path}</span>
 						</button>
 					{/each}
 				{:else}
-					<div class="blog-browser-empty">no matching posts</div>
+					<EmptyState message="no matching posts" />
 				{/if}
 			</div>
 			{#if canScrollUp}
@@ -283,24 +198,249 @@
 					<span>preview</span>
 					<span>cat {selectedPost.path}</span>
 				</div>
-				<div class="terminal-prose terminal-prose-preview">
+				<Prose variant="preview" class="ui-scroll">
 					<h1>{selectedPost.title}</h1>
 					{#if selectedPost.description}
-						<p class="text-[var(--tx-2)]">{selectedPost.description}</p>
+						<p class="blog-browser-preview-muted">{selectedPost.description}</p>
 					{/if}
-					<p class="flex flex-wrap gap-x-[10px] gap-y-[3px] text-[var(--tx-2)]">
+					<p class="blog-browser-preview-muted blog-browser-preview-meta">
 						{formatPostDate(selectedPost.date)}
-						{#each selectedPost.tags as tag (tag)}
-							<span>#{tag}</span>
-						{/each}
+						<TagList tags={selectedPost.tags} />
 					</p>
 					{#if previewBlocks.length}
 						<MarkdownBlocks blocks={previewBlocks} compactCode />
 					{/if}
-				</div>
+				</Prose>
 			{:else}
-				<div class="blog-browser-empty">adjust query or clear it to see posts</div>
+				<EmptyState message="adjust query or clear it to see posts" />
 			{/if}
 		</div>
 	</div>
-</div>
+</Panel>
+
+<style>
+	:global(.ui-panel.blog-browser) {
+		--blog-browser-columns: minmax(0, 1.6fr) 10ch minmax(0, 1fr) minmax(0, 1.15fr);
+	}
+
+	.blog-browser-toolbar {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: var(--space-3);
+		padding: var(--space-1) var(--ui-panel-inset);
+		border-bottom: 1px solid var(--border);
+	}
+
+	.blog-browser-grid {
+		display: grid;
+		height: 380px;
+		min-height: 220px;
+		grid-template-columns: minmax(360px, 1fr) minmax(220px, 0.55fr);
+	}
+
+	.blog-browser-results-shell {
+		position: relative;
+		display: flex;
+		min-width: 0;
+		min-height: 0;
+		flex-direction: column;
+		border-right: 1px solid var(--border);
+	}
+
+	.blog-browser-results {
+		min-width: 0;
+		min-height: 0;
+		flex: 1;
+		padding: var(--space-1);
+		overflow: auto;
+		scroll-padding-block: var(--space-3) var(--space-6);
+	}
+
+	.blog-browser-results-header {
+		z-index: var(--layer-sticky);
+		display: grid;
+		flex: none;
+		grid-template-columns: var(--blog-browser-columns);
+		gap: var(--space-3);
+		padding: var(--space-1) var(--space-3);
+		border-bottom: 1px solid var(--border);
+		background: var(--surface);
+		color: var(--accent);
+		font-weight: 700;
+	}
+
+	.blog-browser-row {
+		display: grid;
+		width: 100%;
+		grid-template-columns: var(--blog-browser-columns);
+		align-items: start;
+		gap: var(--space-3);
+		padding: var(--space-1) var(--space-2);
+		background: transparent;
+		color: var(--text);
+		text-align: left;
+		scroll-margin-block: var(--space-3) var(--space-6);
+	}
+
+	.blog-browser-row:hover {
+		background: var(--surface-raised);
+	}
+
+	.blog-browser-row:active {
+		background: var(--control-hover);
+	}
+
+	.blog-browser-row-selected,
+	.blog-browser-row-selected:hover,
+	.blog-browser-row-selected:active {
+		background: var(--accent);
+		color: var(--on-accent);
+	}
+
+	.blog-browser-title,
+	.blog-browser-path {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+
+	.blog-browser-date {
+		min-width: 0;
+		opacity: 0.85;
+	}
+
+	.blog-browser-row :global(.blog-browser-tags) {
+		opacity: 0.8;
+	}
+
+	.blog-browser-path {
+		opacity: 0.7;
+	}
+
+	.blog-browser-scroll-hint {
+		position: absolute;
+		right: var(--space-2);
+		z-index: var(--layer-raised);
+		padding: var(--space-half) var(--space-1);
+		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--surface) 92%, transparent);
+		color: var(--accent);
+		pointer-events: none;
+	}
+
+	.blog-browser-scroll-hint-top {
+		top: 36px;
+	}
+
+	.blog-browser-scroll-hint-bottom {
+		bottom: var(--space-2);
+	}
+
+	.blog-browser-preview {
+		display: flex;
+		min-width: 0;
+		min-height: 0;
+		flex-direction: column;
+		padding: var(--space-1) var(--space-2);
+		overflow: hidden;
+	}
+
+	.blog-browser-preview-header {
+		display: flex;
+		justify-content: space-between;
+		gap: var(--space-3);
+		margin-bottom: var(--space-1);
+		color: var(--text-muted);
+	}
+
+	.blog-browser-preview-muted {
+		color: var(--text-muted);
+	}
+
+	.blog-browser-preview-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-half) var(--space-2);
+	}
+
+	@media (max-width: 760px) {
+		:global(.ui-panel.blog-browser) {
+			position: absolute;
+			inset: 0;
+			z-index: var(--layer-panel);
+			margin: 0;
+			padding-top: var(--space-4);
+			border: 0;
+		}
+
+		.blog-browser-toolbar {
+			grid-template-columns: minmax(0, 1fr);
+			gap: var(--space-2);
+			padding-block: var(--space-2);
+		}
+
+		.blog-browser-grid {
+			height: auto;
+			min-height: 0;
+			flex: 1;
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.blog-browser-results-shell {
+			flex: 1 1 auto;
+			overflow: hidden;
+			border-right: 0;
+		}
+
+		.blog-browser-results {
+			height: 100%;
+		}
+
+		.blog-browser-results-header,
+		.blog-browser-preview {
+			display: none;
+		}
+
+		.blog-browser-row {
+			min-height: 96px;
+			grid-template-columns: minmax(0, 1fr);
+			gap: var(--space-half);
+			padding: var(--space-3) var(--space-2);
+			border-bottom: 1px solid var(--border);
+		}
+
+		.blog-browser-row::before {
+			display: block;
+			color: var(--text-muted);
+			content: counter(post-row, decimal-leading-zero);
+		}
+
+		.blog-browser-row > * {
+			pointer-events: none;
+		}
+
+		.blog-browser-row-selected,
+		.blog-browser-row-selected:hover,
+		.blog-browser-row-selected:active {
+			background: transparent;
+			color: var(--text);
+		}
+
+		.blog-browser-title {
+			font-weight: 700;
+		}
+
+		.blog-browser-path::before {
+			content: 'cat ';
+		}
+
+		.blog-browser-scroll-hint-top {
+			top: var(--space-2);
+		}
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		:global(.ui-panel.blog-browser) {
+			animation: motion-rise var(--motion-normal) var(--ease-enter);
+		}
+	}
+</style>

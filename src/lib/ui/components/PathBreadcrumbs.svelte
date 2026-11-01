@@ -65,7 +65,7 @@
 		align-items: baseline;
 		margin: 0;
 		padding: 0;
-		color: var(--cyan);
+		color: var(--info);
 		line-height: 1.45;
 		list-style: none;
 	}
@@ -76,31 +76,30 @@
 	}
 
 	.ui-breadcrumbs-sep {
-		padding-inline: 0.5ch;
-		color: var(--tx-2);
+		padding-inline: var(--space-1);
+		color: var(--text-muted);
 	}
 
 	a,
 	button {
+		display: inline-flex;
+		min-height: var(--target-min);
+		align-items: center;
 		padding: 0;
 		background: transparent;
-		color: var(--cyan);
+		color: var(--link);
 		text-decoration: none;
-		cursor: pointer;
 	}
 
 	a:hover,
-	button:hover,
-	a:focus-visible,
-	button:focus-visible {
-		color: var(--yellow);
+	button:hover {
+		color: var(--accent);
 		text-decoration: underline;
 		text-underline-offset: 3px;
-		outline: none;
 	}
 
 	.ui-breadcrumbs-current {
-		color: var(--tx);
+		color: var(--text);
 		overflow-wrap: anywhere;
 	}
 </style>
