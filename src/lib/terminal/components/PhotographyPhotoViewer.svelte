@@ -37,7 +37,7 @@
 </script>
 
 <Lightbox
-	image={photograph}
+	image={photograph && { ...photograph, placeholderSrc: photograph.thumbnailSrc }}
 	label={photograph ? `Photograph: ${photograph.alt}` : 'Photograph viewer'}
 	closeLabel="Close photograph"
 	errorMessage="Photograph unavailable. Close and reopen it to try again."

@@ -462,7 +462,12 @@
 			<div class="photography-gallery-track">
 				{#if headerPhotograph}
 					<div class="photography-gallery-cell">
-						<PhotographyTile photograph={headerPhotograph} sizes="100vh" onOpen={openPhoto} />
+						<PhotographyTile
+							photograph={headerPhotograph}
+							height="100vh"
+							priority
+							onOpen={openPhoto}
+						/>
 					</div>
 				{/if}
 				<div class="photography-gallery-rows">
@@ -470,7 +475,13 @@
 						<div class="photography-gallery-row">
 							{#each row as { photograph, index } (photograph.id)}
 								<div class="photography-gallery-cell" style:order={index + 1}>
-									<PhotographyTile {photograph} sizes="50vh" onOpen={openPhoto} />
+									<PhotographyTile
+										{photograph}
+										height="100vh"
+										mobileHeight="50vh"
+										priority={!headerPhotograph && index === 0}
+										onOpen={openPhoto}
+									/>
 								</div>
 							{/each}
 						</div>

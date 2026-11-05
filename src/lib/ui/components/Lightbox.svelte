@@ -3,7 +3,8 @@
 	Full-screen image viewer on the native `<dialog>`, so focus trapping, focus return,
 	Escape, and the top layer come from the browser. Click the image to zoom; drag or
 	scroll to pan. Setting `image` opens it, clearing `image` closes it, and the last
-	image stays rendered for the exit transition.
+	image stays rendered for the exit transition. `image.placeholderSrc` stands in while
+	a large image loads.
 
 	`footer` renders a bar pinned below the image, such as photo metadata.
 -->
@@ -44,6 +45,7 @@
 	let dragMoved = false;
 	let dragStart = { x: 0, y: 0, left: 0, top: 0 };
 	let failedSource = $state('');
+	let loadedSource = $state('');
 	let shown = $state<LightboxImage>();
 	let failed = $derived(!!shown && failedSource === shown.src);
 
@@ -180,6 +182,10 @@
 								width={shown.width}
 								height={shown.height}
 								draggable={false}
+								style:background-image={shown.placeholderSrc && loadedSource !== shown.src
+									? `url("${shown.placeholderSrc}")`
+									: undefined}
+								onload={() => (loadedSource = shown?.src ?? '')}
 								onerror={() => (failedSource = shown?.src ?? '')}
 							/>
 						</button>
@@ -254,6 +260,7 @@
 		max-width: calc(100vw - 2 * var(--ui-lightbox-inset));
 		max-height: calc(100dvh - var(--ui-lightbox-footer) - 2 * var(--ui-lightbox-inset));
 		object-fit: contain;
+		background-size: 100% 100%;
 	}
 
 	.ui-lightbox-zoomed {

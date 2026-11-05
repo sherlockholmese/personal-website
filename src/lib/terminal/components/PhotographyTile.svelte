@@ -3,16 +3,33 @@
 
 	let {
 		photograph,
-		sizes,
+		height,
+		mobileHeight,
+		priority = false,
 		onOpen
 	}: {
 		photograph: Photograph;
-		sizes: string;
+		/** The tile's rendered height as a CSS length; `srcset` widths follow from it. */
+		height: string;
+		/** The rendered height at the 760px mobile breakpoint, when it differs. */
+		mobileHeight?: string;
+		/** Load immediately and ahead of other images, for the first photograph in view. */
+		priority?: boolean;
 		onOpen: (photograph: Photograph) => void;
 	} = $props();
 
 	let failedSource = $state('');
 	let imageFailed = $derived(failedSource === (photograph.thumbnailSrc ?? photograph.src));
+	// Tiles are sized by height, so their width is the aspect ratio times that height.
+	let aspectRatio = $derived(
+		photograph.width && photograph.height ? photograph.width / photograph.height : 1.5
+	);
+	let sizes = $derived.by(() => {
+		const width = (tileHeight: string) => `calc(${aspectRatio.toFixed(3)} * ${tileHeight})`;
+		return mobileHeight
+			? `(max-width: 760px) ${width(mobileHeight)}, ${width(height)}`
+			: width(height);
+	});
 </script>
 
 <figure class="photography-gallery-frame" data-photo-id={photograph.id}>
@@ -34,7 +51,8 @@
 				alt={photograph.alt}
 				width={photograph.width ?? 1280}
 				height={photograph.height ?? 960}
-				loading="lazy"
+				loading={priority ? 'eager' : 'lazy'}
+				fetchpriority={priority ? 'high' : 'auto'}
 				decoding="async"
 				onerror={() => {
 					failedSource = photograph.thumbnailSrc ?? photograph.src;

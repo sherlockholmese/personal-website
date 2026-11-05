@@ -91,16 +91,16 @@ Run `bun run dev` and open [`/ui`](http://localhost:5173/ui) for a live gallery 
 
 ### Feedback and overlays
 
-| Component     | Purpose                                                                                 |
-| ------------- | --------------------------------------------------------------------------------------- |
-| `Callout`     | Message with a left rule in its tone, plus `code` badge, `headingLevel`, and `actions`. |
-| `EmptyState`  | Quiet placeholder for empty or failed lists.                                            |
-| `Spinner`     | Braille-dot spinner with a status label.                                                |
-| `ProgressBar` | ASCII `[####----] 50%` meter with progressbar semantics.                                |
-| `Details`     | Native disclosure with a rotating chevron.                                              |
-| `Dialog`      | Native modal `<dialog>` styled as a terminal window. Supports `bind:open`.              |
-| `Lightbox`    | Full-screen image viewer on native `<dialog>`: zoom, drag to pan, `footer` bar.         |
-| `Notice`      | Floating corner card like the cookie banner. Supports `bind:open`.                      |
+| Component     | Purpose                                                                                  |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| `Callout`     | Message with a left rule in its tone, plus `code` badge, `headingLevel`, and `actions`.  |
+| `EmptyState`  | Quiet placeholder for empty or failed lists.                                             |
+| `Spinner`     | Braille-dot spinner with a status label.                                                 |
+| `ProgressBar` | ASCII `[####----] 50%` meter with progressbar semantics.                                 |
+| `Details`     | Native disclosure with a rotating chevron.                                               |
+| `Dialog`      | Native modal `<dialog>` styled as a terminal window. Supports `bind:open`.               |
+| `Lightbox`    | Full-screen image viewer on native `<dialog>`: zoom, drag to pan, placeholder, `footer`. |
+| `Notice`      | Floating corner card like the cookie banner. Supports `bind:open`.                       |
 
 ## Adding components
 

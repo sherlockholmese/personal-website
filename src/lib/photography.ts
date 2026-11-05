@@ -4,6 +4,30 @@ export type { Photograph } from '../content/photography';
 
 export type PhotographyRouteState = { photoSlug?: string };
 
+/** Widths the server resizes photographs to. Anything else is refused. */
+export const PHOTOGRAPH_VARIANT_WIDTHS = [240, 480, 960, 1600, 2400] as const;
+
+/** URL of a resized WebP copy of a photograph served from `/media/photography`. */
+export function photographVariantSrc(src: string, width: number) {
+	return `${src}${src.includes('?') ? '&' : '?'}w=${width}`;
+}
+
+/**
+ * A `srcset` of resized copies no wider than the original, plus the smallest copy as `src`.
+ * Unknown dimensions offer every width; the server never enlarges.
+ */
+export function photographVariants(src: string, width?: number) {
+	const widths = PHOTOGRAPH_VARIANT_WIDTHS.filter(
+		(candidate, index) => !width || candidate <= width || index === 0
+	);
+	return {
+		thumbnailSrc: photographVariantSrc(src, PHOTOGRAPH_VARIANT_WIDTHS[2]),
+		thumbnailSrcset: widths
+			.map((candidate) => `${photographVariantSrc(src, candidate)} ${candidate}w`)
+			.join(', ')
+	};
+}
+
 export function photographFileName(photograph: Photograph) {
 	return (photograph.objectKey ?? photograph.src).split('/').at(-1) ?? photograph.id;
 }

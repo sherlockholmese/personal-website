@@ -46,6 +46,8 @@ export type LightboxImage = {
 	alt: string;
 	width?: number;
 	height?: number;
+	/** A smaller, quicker copy shown in the image's place until `src` finishes loading. */
+	placeholderSrc?: string;
 	/** Open zoomed in, centered on this point (0–1 ratios of the image). */
 	origin?: { x: number; y: number };
 };

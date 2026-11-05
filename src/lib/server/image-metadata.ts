@@ -1,12 +1,57 @@
+import { fetchR2PhotoHeader } from './r2';
+
 export type ImageMetadata = { camera?: string; date?: string; width?: number; height?: number };
 
+type RawMetadata = ImageMetadata & { orientation?: number };
+
+const HEADER_BYTES = 262144;
+
+/**
+ * Reads a photograph's metadata from the first 256 KiB of its R2 object. Resolves undefined when
+ * the object is missing; rejects when R2 is unavailable.
+ */
+export async function fetchPhotoMetadata(
+	path: string,
+	signal: AbortSignal
+): Promise<ImageMetadata | undefined> {
+	const response = await fetchR2PhotoHeader(path, signal);
+	if (!response.ok || !response.body) {
+		await response.body?.cancel();
+		if (response.status === 404) return undefined;
+		throw new Error('R2 photograph unavailable');
+	}
+	const reader = response.body.getReader();
+	const buffer = new Uint8Array(HEADER_BYTES);
+	let length = 0;
+	try {
+		while (length < buffer.length) {
+			const { value, done } = await reader.read();
+			if (done) break;
+			const chunk = value.subarray(0, buffer.length - length);
+			buffer.set(chunk, length);
+			length += chunk.length;
+		}
+	} finally {
+		await reader.cancel();
+	}
+	return readImageMetadata(buffer.subarray(0, length));
+}
+
 // Read only camera/date/dimensions. GPS, serial numbers, and other EXIF fields are omitted.
+// Dimensions are as displayed: EXIF orientations 5–8 rotate the stored pixels a quarter turn.
 export function readImageMetadata(bytes: Uint8Array): ImageMetadata {
+	const { orientation, ...metadata } = readRawMetadata(bytes);
+	if (orientation && orientation >= 5 && orientation <= 8)
+		[metadata.width, metadata.height] = [metadata.height, metadata.width];
+	return metadata;
+}
+
+function readRawMetadata(bytes: Uint8Array): RawMetadata {
 	try {
 		const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 		if (view.getUint16(0) === 0xffd8) {
 			let offset = 2;
-			const result: ImageMetadata = {};
+			const result: RawMetadata = {};
 			while (offset + 4 <= bytes.length && bytes[offset] === 0xff) {
 				const marker = bytes[offset + 1];
 				if (marker === 0xda || marker === 0xd9) break;
@@ -42,7 +87,7 @@ export function readImageMetadata(bytes: Uint8Array): ImageMetadata {
 			return result;
 		}
 		if (view.getUint32(0) === 0x89504e47) {
-			const result: ImageMetadata = { width: view.getUint32(16), height: view.getUint32(20) };
+			const result: RawMetadata = { width: view.getUint32(16), height: view.getUint32(20) };
 			for (let offset = 8; offset + 12 <= bytes.length;) {
 				const length = view.getUint32(offset);
 				if (offset + length + 12 > bytes.length) break;
@@ -71,7 +116,7 @@ export function readImageMetadata(bytes: Uint8Array): ImageMetadata {
 	return {};
 }
 
-function readTiff(bytes: Uint8Array): ImageMetadata {
+function readTiff(bytes: Uint8Array): RawMetadata {
 	const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 	const byteOrder = text(bytes, 0, 2);
 	if (byteOrder !== 'II' && byteOrder !== 'MM') return {};
@@ -87,7 +132,8 @@ function readTiff(bytes: Uint8Array): ImageMetadata {
 			const entry = offset + 2 + index * 12;
 			if (entry + 12 > bytes.length) break;
 			const tag = view.getUint16(entry, little);
-			if (![0x010f, 0x0110, 0x0132, 0x8769, 0x9003, 0xa002, 0xa003, 0xa434].includes(tag)) continue;
+			if (![0x010f, 0x0110, 0x0112, 0x0132, 0x8769, 0x9003, 0xa002, 0xa003, 0xa434].includes(tag))
+				continue;
 			const format = view.getUint16(entry + 2, little);
 			const count = view.getUint32(entry + 4, little);
 			const size = format === 2 ? count : format === 3 ? count * 2 : format === 4 ? count * 4 : 0;
@@ -122,7 +168,8 @@ function readTiff(bytes: Uint8Array): ImageMetadata {
 		camera: camera || undefined,
 		date: dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : undefined,
 		width: typeof values.get(0xa002) === 'number' ? Number(values.get(0xa002)) : undefined,
-		height: typeof values.get(0xa003) === 'number' ? Number(values.get(0xa003)) : undefined
+		height: typeof values.get(0xa003) === 'number' ? Number(values.get(0xa003)) : undefined,
+		orientation: typeof values.get(0x0112) === 'number' ? Number(values.get(0x0112)) : undefined
 	};
 }
 
@@ -130,7 +177,7 @@ function text(bytes: Uint8Array, offset: number, length: number) {
 	return new TextDecoder().decode(bytes.subarray(offset, offset + length));
 }
 
-function mergeDefined(target: ImageMetadata, source: ImageMetadata) {
+function mergeDefined(target: RawMetadata, source: RawMetadata) {
 	for (const [name, value] of Object.entries(source)) {
 		if (value !== undefined) Object.assign(target, { [name]: value });
 	}
