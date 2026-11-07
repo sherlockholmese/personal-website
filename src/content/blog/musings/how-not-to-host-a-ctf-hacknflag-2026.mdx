@@ -1,0 +1,61 @@
+---
+title: "How NOT to Host a CTF (Hack'N'Flag 2026)"
+date: 2026-11-07
+description: "The least fufilling CTF I have ever played."
+tags: ['musings', 'ctf', 'cybersecurity']
+---
+
+# Foreword.
+Recently, I took part in Hack'N'Flag 2026, organised by NullSec, a cybersecurity interest group for Ngee Ann Polytechnic. To be honest, I did not have really high expectations walking into the competition. After all, it is organised by teenagers for teenagers; some roughness is certainly to be expected as part of the process. Unfortunately, I was not prepared for how *fluffy* and *utterly underwhelming* the competition was going to be. Perhaps this would be a good example of how **not** to organise a CTF.
+
+# Equity.
+A CTF competition is fundamentally a test of cybersecurity skill. Of course, there is no problem with having fun on the side — be it unofficial gaming challenges, typing contests, etc. What is not ok, however, is to include game show-esque elements into the actual competitive process itself.
+
+![Organiser announcement offering CTF points for a trivia gameshow and a Brawl Stars 1v1](/images/musings/hacknflag2026/side-challenges.png)
+
+For example, during the CTF, they had these non-cybersecurity related challenges for players to do. Of course, this is fine as a side activity to de-stress and take your mind off solving challenges, **but** they tied it directly to the points you get on the CTF platform. This thus resulted in these non-cybersecurity aspects being a part of the competition. This is especially unfair since some challenges required you to physically find them in Ngee Ann Polytechnic, which not all participants attend or live near. This makes it very unfair to those who are playing for the cybersecurity skill aspect, as other people are able to just simply catch up to you by doing random stuff with the organisers.
+
+![CTF platform awarding points for a talent show and trivia](/images/musings/hacknflag2026/scoreboard-points.png)
+
+Especially since this CTF is partnered with CSA's national cybersecurity leaderboard, the fact that you can inflate your official government-recognised standing by doing *random bullcrap* that has no relation to cybersecurity feels rather disingenuous, at least.
+
+## Cult of Personality.
+During the CTF, one thing that stood out most to me was the sheer cult of personality the organisers tried to form around themselves. There were so many challenges that involved looking up and scouring the organisers' socials, as well as challenges that required you to, *quite literally*, glaze and direct praise at them in order to get the flag. It is these kinds of *terrible, self-centred and validation-seeking* challenges that are framed as a cybersecurity challenge that left a really sour taste in my mouth. Although it may sound fun in theory, it is these very challenges, that seek to serve as *social validation* to the organisers, that detract from an actual, enjoyable CTF experience.
+
+Ultimately, this CTF felt more like a fun game show to monkey around in rather than an actual challenging CTF where cybersecurity skills are put to the test. And that resulted in me being quite disappointed with the competition being branded as a test of cybersecurity skill.
+
+# Quality of Challenges.
+Overall, this CTF featured some of the lowest quality and effort challenges I have seen to date. This did not make for a very fun solving experience, and further contributed to my disdain.
+
+## OSINT and Forensics.
+The OSINT and Forensics challenges in this CTF, to put it quite frankly, are *terrible*. Most of them were very *guessy and unintuitive*, requiring seemingly random hops in order to get the flag. The challenges are also very unrealistic, with the vast majority of them being just random hints splattered around the place that you had to just follow and guess the next step, akin to finding a needle in a haystack. Many of these challenges were also directly linked towards the organisers in some way or form, be it through their socials etc. So it also became more of a test of cronyism, where how much you know about the challenge author directly benefits you and your ability to solve the challenges.
+
+There was rather little actual investigative forensics work needed in the challenges, making this more of a game of guessing which random tool to bonk the file with to get the flag, rather than one that required actual investigative and deductive effort.
+
+## Reverse Engineering.
+I did not really look much into reverse engineering, but much of it was so-called "revslop". The main challenge was trying to put meaning to the stripped, statically-compiled binaries, rather than actually understanding and trying to figure out what cool obfuscation technique/algorithm they were using. This made the category feel more tedious than hard, making it rather annoying to do.
+## Web.
+Much of the web was *blind web*, which made solving it already guessy in and of itself. The icing on the cake was that instead of featuring actual web vulnerabilities, much of the web challenges were just trying to figure out the challenge author's hidden endpoints and undocumented request body structures. This also contributed to the highly guessy nature of this CTF. Barring that, even those that featured actual web vulnerabilities were also lazily implemented in a *half-assed* manner, making solving the web category even less enjoyable than usual. For example, in a challenge featuring XSS, they could not be bothered to have a proper admin bot, relying instead on you querying the flag endpoint in a *very specific and counterintuitive manner* in order to get the flag. Besides, the websites they hosted don't even work themselves, making it very difficult for players to see how the website even works in the first place. Generally, the challenges were very unrealistic and unrepresentative of actual web vulnerabilities.
+## Infrastructure.
+Infrastructure was generally the most palatable category in the CTF. Whilst I would not say it was extraordinary by any means, it was certainly *serviceable*, and I think generally serves as quite a good introduction to the world of red teaming. However, I did hope that the post-exploitation for the harder challenges was more complex and novel, instead of just simply relying on SUIDs and over-privileged crontabs. The initial access point for most challenges was also quite simplistic, with simple options to just ssh into the user once you have set the correct ssh keys. Overall, I think this category had a lot of potential, which could have been much further explored. Barring the really (and I *mean* really) laggy remote (even though it was based in Singapore, btw), this category did most of the basics well, which is far from what can be said about other categories.
+## Pwn.
+The binary exploitation (pwn) was once again quite disappointing. All of the challenges were rather easy to easy-medium stack-based challenges, making for very little variety and thinking needed in the category. Throughout the entire CTF, I spent no more than 30 minutes **combined** on pwn, making this category the fastest to be full-cleared by me and my friends on other teams. Barring one singular challenge in qualifiers (electric eye) which was even remotely interesting to solve (the bug was hidden in PNG decoding), the rest of the pwn was rather bog-standard and not really *that* fun to do. I do understand that this is set by pre-university students, so my complaints regarding the difficulty scaling should be taken with a few pinches of salt, but I do believe that they could have explored further, given the extremely limited number of pwns there were in the entire CTF (categories like OSINT had ~6x the number of challenges).
+# Intellectual Discourse is a Two-Way Street.
+## The Hypocrisy on AI Usage.
+The CTF was from the very onset labelled as an AI-free CTF. That means that players are forbidden from using any form of artificial intelligence in the process of solving the challenges. This is great for testing the real ability of a person, and I support more CTFs considering how to tackle AI use in their competitions. However, I was very disappointed to find that the challenges themselves were, most of the time, written by AI themselves. This created a mismatch of expectations between the organisers and the players, where the players are expected to put their mind and soul into solving challenges that were generated by challenge authors who presumably *did not put much thought into the challenges themselves at all*. It was very disheartening to see that the challenge authors expected players to intellectually interact with questions and hypotheticals that they have set up in challenges with *little to no human purpose and ideation* put behind them.
+
+This has perhaps resulted in one of the most nothing-burger CTFs I have ever played. It is one of the first CTFs where I walked out having learned virtually nothing about cybersecurity. This is because the authors did not carefully think through what exploitation technique and vulnerability they wish to feature; instead, they handed off this work to artificial intelligence, which resulted in a very sloppy result for the players.
+
+The very sloppy creation of these challenges resulted in a funny consequence which is that oftentimes the AI would comment the solution to the problem in its own source code, directly telling players the intended solution for the challenge.
+
+![AI-generated comments in the SROP challenge source spelling out the solution](/images/musings/hacknflag2026/srop-comments.png)
+
+For example, in this SROP challenge, the comments generated by (presumably) Claude Code directly tell the CTF players what to do for the challenge. This ruined a lot of the fun of hunting for the vulnerability itself and kind of defeats the whole point, as being able to spot vulnerabilities is just as important as being able to solve them.
+
+Much of the web also appears to have been AI-generated, with plenty of AI-sounding phrases and AI-looking user interface design.
+
+When we engage in intellectual discussions, such as authors setting challenges for players and players solving challenges and learning things, we expect some level of human purpose and learning to be placed in this exchange of knowledge. When there is an asymmetric dedication of human effort towards this intellectual endeavour, it makes the bilateral exchange of ideas very disheartening, especially for players who have put so much human effort into something that the organisers probably couldn't *give two shits about*.
+
+I can forgive having easier challenges, as pre-university kids may not be *that* knowledgeable on exploits and vulnerabilities. What I cannot forgive is **the sheer lack of sincerity and effort in putting up a fruitful CTF experience for participants**.
+
+If your goal is to "have fun and aura farm", why do it in a CTF? You will have better chances in a proper game show anyways.
