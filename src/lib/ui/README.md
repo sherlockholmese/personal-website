@@ -100,7 +100,7 @@ Run `bun run dev` and open [`/ui`](http://localhost:5173/ui) for a live gallery 
 | `Details`     | Native disclosure with a rotating chevron.                                               |
 | `Dialog`      | Native modal `<dialog>` styled as a terminal window. Supports `bind:open`.               |
 | `Lightbox`    | Full-screen image viewer on native `<dialog>`: zoom, drag to pan, placeholder, `footer`. |
-| `Notice`      | Floating corner card like the cookie banner. Supports `bind:open`.                       |
+| `Notice`      | Floating corner card. Supports `bind:open`.                                              |
 
 ## Adding components
 

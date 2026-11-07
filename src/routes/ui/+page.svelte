@@ -313,6 +313,6 @@ export function greet(name: string) {
 		{#snippet footer()}Lightbox footer{/snippet}
 	</Lightbox>
 	<Notice bind:open={noticeOpen} title="Notice">
-		<p>Floating notices share the cookie banner styling.</p>
+		<p>A floating corner notice.</p>
 	</Notice>
 </TerminalPage>

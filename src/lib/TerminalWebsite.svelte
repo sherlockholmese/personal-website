@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { getContext, onMount, tick, untrack } from 'svelte';
-	import { COOKIE_NOTICE_CONTEXT } from '#lib/cookie-notice.ts';
+	import { onMount, tick, untrack } from 'svelte';
 	import {
 		photographRoutePath,
 		photographRouteSlug,
@@ -65,7 +64,6 @@
 
 	const ABOUT_PATH = 'about';
 	const THEME_STORAGE_KEY = 'flexoki-theme';
-	const openCookieNotice = getContext<() => void>(COOKIE_NOTICE_CONTEXT);
 	let {
 		data
 	}: {
@@ -514,13 +512,6 @@
 				return;
 			case 'help':
 				history = [...history, { kind: 'help' }];
-				return;
-			case 'cookies':
-				if (target) {
-					print(['usage: cookies'], 'error');
-				} else {
-					openCookieNotice();
-				}
 				return;
 			case 'about':
 				openAboutPost();
