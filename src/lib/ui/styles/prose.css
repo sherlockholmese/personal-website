@@ -24,6 +24,23 @@
 		text-decoration-color: var(--info);
 	}
 
+	/* KaTeX math. Its serif runs larger than the monospace body at equal size, so it is held near
+	   the body's x-height; display math scrolls on its own rather than widening the page. */
+	.ui-prose .katex {
+		font-size: 1.1em;
+	}
+
+	.ui-prose .ui-math-display {
+		display: block;
+		margin-block: var(--space-4);
+		overflow: auto hidden;
+		text-align: center;
+	}
+
+	.ui-prose .ui-math-display .katex-display {
+		margin: 0;
+	}
+
 	.ui-prose p,
 	.ui-prose blockquote,
 	.ui-prose li {

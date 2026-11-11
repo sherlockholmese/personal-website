@@ -216,6 +216,17 @@
 		white-space: nowrap;
 	}
 
+	/* Images using `revealImage` appear whole once decoded instead of painting in strips. */
+	:where(img[data-reveal]:not([data-loaded])) {
+		opacity: 0;
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		:where(img[data-reveal][data-loaded]) {
+			transition: opacity var(--motion-slow) var(--ease-standard);
+		}
+	}
+
 	.ui-scroll {
 		scrollbar-width: thin;
 		scrollbar-color: var(--border) transparent;
@@ -225,6 +236,12 @@
 		from {
 			opacity: 0;
 			transform: translateY(6px);
+		}
+	}
+
+	@keyframes motion-fade {
+		from {
+			opacity: 0;
 		}
 	}
 

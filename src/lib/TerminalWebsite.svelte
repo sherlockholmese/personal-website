@@ -56,6 +56,7 @@
 	import PhotographyGallery from '#lib/terminal/components/PhotographyGallery.svelte';
 	import PostReader from '#lib/terminal/components/PostReader.svelte';
 	import ProjectsTable from '#lib/terminal/components/ProjectsTable.svelte';
+	import { planeEnter } from '#lib/terminal/motion.ts';
 	import PromptForm from '#lib/terminal/components/PromptForm.svelte';
 	import RouteLinks from '#lib/terminal/components/RouteLinks.svelte';
 	import SocialLinks from '#lib/terminal/components/SocialLinks.svelte';
@@ -115,6 +116,7 @@
 	let photographyClose = $state<HTMLButtonElement>();
 	let highlightedCode = $state<Record<string, string>>({});
 	let previewMarkdownByPath = $state<Record<string, string>>({});
+	let previewMathByPath = $state<Record<string, Record<string, string>>>({});
 	let previewHighlightedCodeByKey = $state<Record<string, Record<string, string>>>({});
 	let mobileViewportHeight = $state<number>();
 	let mobileKeyboardOpen = $state(false);
@@ -152,7 +154,9 @@
 				: undefined
 	);
 	let postMarkdownTokens = $derived(tokenizeMarkdown(selectedFullPost?.markdown ?? ''));
-	let parsedPost = $derived(parseMarkdown(postMarkdownTokens, highlightedCode));
+	let parsedPost = $derived(
+		parseMarkdown(postMarkdownTokens, highlightedCode, selectedFullPost?.math)
+	);
 	let postViewBlocks = $derived(parsedPost);
 	let fzfResults = $derived(sortPosts(searchPosts(postSearchIndex, fzfQuery), blogSort));
 	let browserSelectedPost = $derived(fzfResults[fzfIndex] ?? selectedPost);
@@ -167,7 +171,13 @@
 	);
 	let browserPreviewTokens = $derived(tokenizeMarkdown(browserPreviewMarkdown ?? ''));
 	let browserPreviewBlocks = $derived(
-		parseMarkdown(browserPreviewTokens, browserPreviewHighlightedCode)
+		parseMarkdown(
+			browserPreviewTokens,
+			browserPreviewHighlightedCode,
+			selectedFullPost?.path === browserSelectedPost.path
+				? selectedFullPost.math
+				: previewMathByPath[browserSelectedPost.path]
+		)
 	);
 	let terminalTitleText = $derived(currentView === 'post' ? selectedPost.title : TERMINAL_TITLE);
 	let closeTerminalPanel = $derived(
@@ -817,7 +827,11 @@
 				`${resolve('/api/blog-preview' as const)}?path=${encodeURIComponent(path)}`,
 				{ signal }
 			);
-			const preview = (await response.json()) as { markdown?: string };
+			const preview = (await response.json()) as {
+				markdown?: string;
+				math?: Record<string, string>;
+			};
+			previewMathByPath = { ...previewMathByPath, [path]: preview.math ?? {} };
 			previewMarkdownByPath = {
 				...previewMarkdownByPath,
 				[path]: response.ok && typeof preview.markdown === 'string' ? preview.markdown : ''
@@ -956,20 +970,25 @@
 			{#each history as line, index (index)}
 				{#if line.kind === 'prompt'}
 					<Prompt cwd={line.cwd} command={line.command} collapse />
-				{:else if line.kind === 'links'}
-					<RouteLinks path={line.path} entries={line.entries} />
-				{:else if line.kind === 'socials'}
-					<SocialLinks />
-				{:else if line.kind === 'projects'}
-					<ProjectsTable />
-				{:else if line.kind === 'banner'}
-					<WelcomeBanner {posts} {asciiSeed} onCommand={runShortcut} />
-				{:else if line.kind === 'help'}
-					<HelpPanel />
-				{:else if line.kind === 'not-found'}
-					<NotFoundPanel path={line.path} onCommand={runShortcut} />
 				{:else}
-					<OutputLine kind={line.kind} text={line.text} />
+					<!-- New output rises in as one plane; the echoed command above it stays put. -->
+					<div class="terminal-output" in:planeEnter|global>
+						{#if line.kind === 'links'}
+							<RouteLinks path={line.path} entries={line.entries} />
+						{:else if line.kind === 'socials'}
+							<SocialLinks />
+						{:else if line.kind === 'projects'}
+							<ProjectsTable />
+						{:else if line.kind === 'banner'}
+							<WelcomeBanner {posts} {asciiSeed} onCommand={runShortcut} />
+						{:else if line.kind === 'help'}
+							<HelpPanel />
+						{:else if line.kind === 'not-found'}
+							<NotFoundPanel path={line.path} onCommand={runShortcut} />
+						{:else}
+							<OutputLine kind={line.kind} text={line.text} />
+						{/if}
+					</div>
 				{/if}
 			{/each}
 

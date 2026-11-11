@@ -29,6 +29,8 @@ export type BlogPostMeta = {
 
 export type BlogPost = BlogPostMeta & {
 	markdown: string;
+	/** Server-rendered LaTeX, keyed by `mathKey`. */
+	math?: Record<string, string>;
 };
 
 export type RouteLinkEntry = {
@@ -44,4 +46,5 @@ export type MdBlock =
 	| { type: 'code'; language: string; code: string; html: string; lineCount: number }
 	| { type: 'dist'; label: string; file: string; href: string }
 	| { type: 'quote'; html: string }
+	| { type: 'math'; html: string }
 	| { type: 'hr' };

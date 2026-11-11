@@ -57,6 +57,7 @@ export { default as Lightbox } from './components/Lightbox.svelte';
 export { default as Notice } from './components/Notice.svelte';
 
 export { toneColor, headingColor } from './tone';
+export { revealImage } from './reveal';
 export type {
 	DataTableColumn,
 	KeyValueItem,

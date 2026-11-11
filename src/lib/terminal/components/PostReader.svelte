@@ -15,6 +15,7 @@
 	import type { BlogPost, MdBlock } from '../types';
 	import { formatPostDate } from '../date';
 	import { pointRatio } from '../geometry';
+	import { prefersReducedMotion } from '../motion';
 	import MarkdownBlocks from './MarkdownBlocks.svelte';
 
 	type TocItem = {
@@ -46,6 +47,7 @@
 		activeHeading === toc[0]?.id ? '' : toc.find((item) => item.id === activeHeading)?.text
 	);
 	let tocToggle = $state<HTMLElement>();
+	let tocNav = $state<HTMLElement>();
 
 	function handleScroll() {
 		if (scrollFrame !== undefined) return;
@@ -112,6 +114,29 @@
 			cancelled = true;
 			resizeObserver?.disconnect();
 		};
+	});
+
+	// Keep the current section in view when the contents list is taller than its rail.
+	$effect(() => {
+		const nav = tocNav;
+		const id = activeHeading;
+		// Opening the docked list also lands it on the current section.
+		void mobileTocOpen;
+		if (!nav) return;
+		void tick().then(() => {
+			if (nav.scrollHeight <= nav.clientHeight) return;
+			const item = nav.querySelector<HTMLElement>(`[data-toc-id="${CSS.escape(id)}"]`);
+			const margin = nav.clientHeight / 4;
+			let top = nav.scrollTop;
+			if (!item) top = 0;
+			else if (item.offsetTop < nav.scrollTop + margin) top = item.offsetTop - margin;
+			else if (item.offsetTop + item.offsetHeight > nav.scrollTop + nav.clientHeight - margin) {
+				top = item.offsetTop + item.offsetHeight - nav.clientHeight + margin;
+			}
+			if (Math.abs(top - nav.scrollTop) >= 1) {
+				nav.scrollTo({ top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+			}
+		});
 	});
 
 	$effect(() => {
@@ -237,17 +262,20 @@
 					</Button>
 				</div>
 
+				<!-- The window title and the post's heading already name the post, so the list starts at
+				its first section. -->
 				<nav
+					bind:this={tocNav}
 					id="post-toc"
 					class:post-toc-open={mobileTocOpen}
 					class="post-toc ui-scroll"
-					aria-label="table of contents"
+					aria-label="Contents"
 				>
-					<span class="post-toc-heading">contents</span>
-					{#each toc as heading (heading.id)}
+					{#each toc.slice(1) as heading (heading.id)}
 						<button
 							type="button"
 							class={`post-toc-item post-toc-depth-${tocDepth(heading.level)}`}
+							data-toc-id={heading.id}
 							aria-current={heading.id === activeHeading ? 'location' : undefined}
 							onclick={() => scrollToHeading(heading.id)}
 						>
@@ -334,71 +362,83 @@
 		margin-inline-start: auto;
 	}
 
+	/*
+	 * A rail in the left margin, centered vertically in the reader. Sections are told apart by
+	 * indent and tone in one type size; a continuous guide line marks the current one in accent.
+	 * The rail's font size matches the article's, so its `ch` offsets line up with the 86ch column.
+	 */
 	.post-toc {
+		--post-toc-width: 240px;
+		--post-toc-gap: var(--space-8);
 		position: absolute;
 		top: 50%;
-		left: max(var(--space-4), calc(50% - 43ch - 238px));
+		left: max(var(--space-4), calc(50% - 43ch - var(--post-toc-gap) - var(--post-toc-width)));
 		z-index: var(--layer-raised);
-		width: 200px;
-		max-height: 62vh;
-		padding: var(--space-2);
+		width: var(--post-toc-width);
+		max-height: calc(100% - 2 * var(--space-4));
 		overflow: auto;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--surface) 94%, transparent);
+		font-size: var(--text-reading);
+		overscroll-behavior: contain;
 		transform: translateY(-50%);
 	}
 
-	.post-toc-heading {
-		display: block;
-		margin-bottom: var(--space-2);
-		color: var(--accent);
-		font-weight: 700;
-	}
-
 	.post-toc-item {
-		position: relative;
 		display: block;
 		width: 100%;
 		min-height: var(--target-min);
-		padding: var(--space-half) var(--space-1);
-		border-left: 1px solid transparent;
+		padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+		border-left: 1px solid var(--border);
 		background: transparent;
 		color: var(--text-muted);
+		font-size: var(--text-caption);
+		line-height: 1.45;
 		text-align: left;
 	}
 
-	.post-toc-item:hover,
-	.post-toc-item[aria-current='location'] {
-		background: var(--surface-raised);
-		color: var(--accent);
-	}
-
 	.post-toc-depth-0 {
-		font-weight: 700;
-	}
-
-	.post-toc-depth-0:not([aria-current='location'], :hover) {
 		color: var(--text);
 	}
 
-	.post-toc-depth-1,
-	.post-toc-depth-2,
-	.post-toc-depth-3 {
-		margin-top: var(--space-half);
-		border-left-color: var(--border);
-		font-size: var(--text-caption);
-	}
-
-	.post-toc-depth-1 {
-		padding-left: var(--space-4);
-	}
-
 	.post-toc-depth-2 {
+		padding-left: var(--space-6);
+	}
+
+	.post-toc-depth-3 {
 		padding-left: var(--space-8);
 	}
 
-	.post-toc-depth-3 {
-		padding-left: calc(var(--space-8) + var(--space-4));
+	/* A depth-0 section after a subsection starts a new group. */
+	.post-toc-item:not(.post-toc-depth-0) + .post-toc-depth-0 {
+		margin-top: var(--space-2);
+	}
+
+	@media (hover: hover) {
+		.post-toc-item:hover {
+			color: var(--text);
+		}
+	}
+
+	.post-toc-item:active {
+		color: var(--accent-hover);
+	}
+
+	/* Two pixels wide, overlapping the guide so the column does not shift. */
+	.post-toc-item[aria-current='location'] {
+		margin-left: -1px;
+		border-left: 2px solid var(--accent);
+		color: var(--accent);
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.post-toc-item {
+			transition:
+				color var(--motion-fast) var(--ease-standard),
+				border-color var(--motion-fast) var(--ease-standard);
+		}
+
+		.post-toc-item:active {
+			transition: none;
+		}
 	}
 
 	/* Without room for the rail, contents joins the bottom dock, where mobile controls live. */
@@ -438,20 +478,17 @@
 			display: block;
 			width: auto;
 			max-height: 50vh;
-			padding: var(--space-1);
-			border-color: var(--border-control);
+			padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+			border: 1px solid var(--border-control);
 			border-bottom: 0;
 			background: var(--surface);
 			box-shadow: var(--shadow-floating);
 			transform: none;
 		}
 
-		.post-toc-heading {
-			display: none;
-		}
-
+		/* The docked list is a touch target list; it reads at body size. */
 		.post-toc-item {
-			padding-block: var(--space-1);
+			font-size: var(--text-body);
 		}
 
 		.post-content {

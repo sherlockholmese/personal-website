@@ -1,8 +1,9 @@
-import { cubicIn } from 'svelte/easing';
+import { cubicIn, quintOut } from 'svelte/easing';
 import type { TransitionConfig } from 'svelte/transition';
 
 // Mirrors the --motion-* tokens in layout.css for transitions Svelte has to run.
 export const MOTION_EXIT_MS = 120;
+export const MOTION_NORMAL_MS = 180;
 export const MOTION_RISE_PX = 6;
 
 export function prefersReducedMotion() {
@@ -12,5 +13,12 @@ export function prefersReducedMotion() {
 export const planeExit: (node: Element) => TransitionConfig = () => ({
 	duration: prefersReducedMotion() ? 0 : MOTION_EXIT_MS,
 	easing: cubicIn,
+	css: (t) => `opacity: ${t}; transform: translateY(${(1 - t) * MOTION_RISE_PX}px)`
+});
+
+/** The `motion-rise` entrance as a transition, for planes Svelte inserts after the first render. */
+export const planeEnter: (node: Element) => TransitionConfig = () => ({
+	duration: prefersReducedMotion() ? 0 : MOTION_NORMAL_MS,
+	easing: quintOut,
 	css: (t) => `opacity: ${t}; transform: translateY(${(1 - t) * MOTION_RISE_PX}px)`
 });

@@ -1,6 +1,7 @@
 <script lang="ts">
 	/* eslint-disable svelte/no-at-html-tags */
 
+	import 'katex/dist/katex.min.css';
 	import { CodeBlock } from '#lib/ui/index.ts';
 	import DistDownload from './DistDownload.svelte';
 	import type { MdBlock } from '../types';
@@ -27,6 +28,8 @@
 				<li>{@html item}</li>
 			{/each}
 		</svelte:element>
+	{:else if block.type === 'math'}
+		{@html block.html}
 	{:else if block.type === 'quote'}
 		<blockquote>{@html block.html}</blockquote>
 	{:else if block.type === 'dist'}

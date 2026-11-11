@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { findPhotograph, type Photograph } from '#lib/photography.ts';
-	import { Button, EmptyState, Heading } from '#lib/ui/index.ts';
-	import { centeredScrollLeft } from '../geometry';
+	import { Button, EmptyState, Heading, revealImage } from '#lib/ui/index.ts';
 	import { planeExit, prefersReducedMotion } from '../motion';
 	import PhotographyTile from './PhotographyTile.svelte';
 	import PhotographyPhotoViewer from './PhotographyPhotoViewer.svelte';
@@ -39,6 +38,7 @@
 	const STRIP_DRIVE_HOLD_MS = 250;
 
 	let galleryStage = $state<HTMLDivElement>();
+	let galleryTrack = $state<HTMLDivElement>();
 	let galleryStrip = $state<HTMLElement>();
 	let activePhotoId = $state('');
 	// Shown until the next photograph is completely in view, and only when the stage overflows.
@@ -134,9 +134,33 @@
 	let stripDrivenUntil = 0;
 	let lastStripWrite = Number.NaN;
 
+	/**
+	 * Photograph positions along a scroller, in scroll-content pixels so they hold at any scroll
+	 * position. Measured once per layout change; scrolling then needs no DOM reads.
+	 */
+	type Track = {
+		starts: number[];
+		ends: number[];
+		/** Made non-decreasing so two-row layouts, where neighbours overlap, still map in order. */
+		centers: number[];
+		width: number;
+		range: number;
+	};
+
+	let stageTrack: Track | undefined;
+	let stripTrack: Track | undefined;
+	/** Scroll positions over which the hint fades out. */
+	let hintRange: { start: number; end: number } | undefined;
+
+	// Measure whenever the stage, its photographs, or the strip change size, including the first
+	// layout. Recreated when the photographs change so new elements are measured.
 	$effect(() => {
-		if (galleryStage && orderedPhotographs.length) syncWithStage();
+		const elements = [galleryStage, galleryTrack, galleryStrip].filter((element) => !!element);
+		if (!elements.length || !orderedPhotographs.length) return;
+		const observer = new ResizeObserver(measure);
+		for (const element of elements) observer.observe(element);
 		return () => {
+			observer.disconnect();
 			cancelAnimationFrame(syncFrame);
 			cancelAnimationFrame(stripSyncFrame);
 			cancelAnimationFrame(edgeFrame);
@@ -154,6 +178,75 @@
 
 	function frameSeconds(time: number, previous: number) {
 		return Math.min(Math.max(time - previous, 0) / 1000, MAX_FRAME_S);
+	}
+
+	function measure() {
+		if (!galleryStage) return;
+		const stageRect = galleryStage.getBoundingClientRect();
+		const frames = itemRects(galleryStage, '.photography-gallery-frame');
+		stageTrack = measureTrack(galleryStage, stageRect, frames);
+		hintRange = measureHint(stageRect, frames);
+		stripTrack =
+			galleryStrip &&
+			measureTrack(
+				galleryStrip,
+				galleryStrip.getBoundingClientRect(),
+				itemRects(galleryStrip, '.photography-gallery-thumbnail')
+			);
+		stageOverflows = !!stageTrack && stageTrack.range > 0;
+		syncWithStage();
+	}
+
+	function itemRects(container: HTMLElement, selector: string) {
+		return new Map(
+			[...container.querySelectorAll<HTMLElement>(selector)].map((element) => [
+				element.dataset.photoId ?? '',
+				element.getBoundingClientRect()
+			])
+		);
+	}
+
+	function measureTrack(
+		container: HTMLElement,
+		rect: DOMRect,
+		items: Map<string, DOMRect>
+	): Track | undefined {
+		const origin = rect.left - container.scrollLeft;
+		const track: Track = {
+			starts: [],
+			ends: [],
+			centers: [],
+			width: container.clientWidth,
+			range: container.scrollWidth - container.clientWidth
+		};
+		for (const photograph of orderedPhotographs) {
+			const item = items.get(photograph.id);
+			if (!item) return;
+			track.starts.push(item.left - origin);
+			track.ends.push(item.right - origin);
+			track.centers.push(
+				Math.max(item.left + item.width / 2 - origin, track.centers.at(-1) ?? -Infinity)
+			);
+		}
+		return track.centers.length ? track : undefined;
+	}
+
+	// The hint fades over the photographs passing beneath it: from when the second one's trailing
+	// edge reaches the hint until the third is completely in view (or the stage reaches its end).
+	// With two rows those are the hint's row, plus the header photograph spanning both.
+	function measureHint(stageRect: DOMRect, frames: Map<string, DOMRect>) {
+		if (!galleryStage || !galleryHint) return;
+		const hintRect = galleryHint.getBoundingClientRect();
+		const y = hintRect.top + hintRect.height / 2;
+		const [, second, third] = [...frames.values()]
+			.filter((rect) => rect.top <= y && rect.bottom >= y)
+			.sort((a, b) => a.left - b.left);
+		if (!second) return;
+		const origin = stageRect.left - galleryStage.scrollLeft;
+		const maxScroll = galleryStage.scrollWidth - galleryStage.clientWidth;
+		const end = Math.min(third ? third.right - origin - stageRect.width : maxScroll, maxScroll);
+		const start = Math.min(second.right - origin - (hintRect.left - stageRect.left), end);
+		return { start, end };
 	}
 
 	function handleWindowKeydown(event: KeyboardEvent) {
@@ -180,23 +273,18 @@
 		stageEaser.to(galleryStage, from + delta);
 	}
 
-	function photoFrame(container: HTMLElement | undefined, photograph: Photograph) {
-		return container?.querySelector<HTMLElement>(`[data-photo-id="${CSS.escape(photograph.id)}"]`);
-	}
-
 	function scrollToPhoto(photograph: Photograph) {
-		const frame = photoFrame(galleryStage, photograph);
-		if (!galleryStage || !frame) return;
+		const index = orderedPhotographs.indexOf(photograph);
+		if (!galleryStage || !stageTrack || index < 0) return;
 		activePhotoId = photograph.id;
-		stageEaser.to(galleryStage, centeredScrollLeft(galleryStage, frame));
+		const center = (stageTrack.starts[index] + stageTrack.ends[index]) / 2;
+		stageEaser.to(galleryStage, center - stageTrack.width / 2);
 	}
 
 	// Glide on until the third photograph under the hint is completely in view, so the hint's
 	// scroll-synced fade plays out during the glide.
 	function showNextPhoto() {
-		const range = galleryStage && hintFadeRange(galleryStage.getBoundingClientRect());
-		if (!galleryStage || !range) return;
-		stageEaser.to(galleryStage, range.end + 1);
+		if (galleryStage && hintRange) stageEaser.to(galleryStage, hintRange.end + 1);
 	}
 
 	function openPhoto(photograph: Photograph) {
@@ -265,10 +353,11 @@
 	// Scroll the strip while the pointer is in an edge zone, easing velocity in and out.
 	function edgeScrollStrip(time: number) {
 		edgeFrame = 0;
-		if (!galleryStrip || !stripPointer) return;
+		if (!galleryStrip || !stripPointer || !stripTrack) return;
 		const seconds = frameSeconds(time, edgeFrameTime);
 		edgeFrameTime = time;
-		const targetSpeed = edgeSpeed(galleryStrip.getBoundingClientRect(), stripPointer.x);
+		const rect = galleryStrip.getBoundingClientRect();
+		const targetSpeed = edgeSpeed(rect, stripPointer.x);
 		edgeVelocity +=
 			(targetSpeed - edgeVelocity) * (1 - Math.exp(-STRIP_ACCELERATION_RATE * seconds));
 		if (!targetSpeed && Math.abs(edgeVelocity) < 4) {
@@ -276,16 +365,16 @@
 			return;
 		}
 
-		const range = galleryStrip.scrollWidth - galleryStrip.clientWidth;
-		edgePosition = Math.min(Math.max(edgePosition + edgeVelocity * seconds, 0), range);
+		edgePosition = Math.min(Math.max(edgePosition + edgeVelocity * seconds, 0), stripTrack.range);
 		setStripScroll(edgePosition);
-		if (edgePosition === 0 || edgePosition === range) edgeVelocity = 0;
+		if (edgePosition === 0 || edgePosition === stripTrack.range) edgeVelocity = 0;
 
-		const thumbnail = document
-			.elementFromPoint(stripPointer.x, stripPointer.y)
-			?.closest<HTMLElement>('.photography-gallery-thumbnail');
-		const photograph = orderedPhotographs.find((photo) => photo.id === thumbnail?.dataset.photoId);
-		if (photograph) hoverStripPhoto(photograph);
+		// The thumbnail now under the pointer, from measured positions rather than hit testing.
+		const x = lastStripWrite + stripPointer.x - rect.left;
+		const index = stripTrack.starts.findIndex(
+			(start, i) => x >= start && x <= (stripTrack?.ends[i] ?? start)
+		);
+		if (index >= 0) hoverStripPhoto(orderedPhotographs[index]);
 		edgeFrame = requestAnimationFrame(edgeScrollStrip);
 	}
 
@@ -299,16 +388,13 @@
 	// both. The reading point's fractional position between photograph centers is shared: scrolling
 	// either one moves the other to the same position, and the nearest photograph is highlighted.
 	function syncWithStage() {
-		if (!galleryStage) return;
-		const stageRect = galleryStage.getBoundingClientRect();
-		stageOverflows = galleryStage.scrollWidth > galleryStage.clientWidth;
-		if (!nextPhotoShown) updateHint(stageRect);
-
-		const position = readingPosition(galleryStage, stageFrames());
-		if (position === undefined) return;
+		if (!galleryStage || !stageTrack) return;
+		const stageLeft = galleryStage.scrollLeft;
+		if (!nextPhotoShown) updateHint(stageLeft);
+		const position = readingPosition(stageTrack, stageLeft);
 		activePhotoId = orderedPhotographs[Math.round(position)].id;
-		if (!galleryStrip || stripHovered || performance.now() < stripDrivenUntil) return;
-		const left = scrollForPosition(galleryStrip, stripThumbnails(), position);
+		if (!stripTrack || stripHovered || performance.now() < stripDrivenUntil) return;
+		const left = scrollForPosition(stripTrack, position);
 		if (left !== undefined) setStripScroll(left);
 	}
 
@@ -322,11 +408,10 @@
 	}
 
 	function syncWithStrip() {
-		if (!galleryStage || !galleryStrip) return;
-		const position = readingPosition(galleryStrip, stripThumbnails());
-		if (position === undefined) return;
+		if (!galleryStage || !galleryStrip || !stageTrack || !stripTrack) return;
+		const position = readingPosition(stripTrack, galleryStrip.scrollLeft);
 		activePhotoId = orderedPhotographs[Math.round(position)].id;
-		const left = scrollForPosition(galleryStage, stageFrames(), position);
+		const left = scrollForPosition(stageTrack, position);
 		if (left === undefined) return;
 		stageEaser.stop();
 		galleryStage.scrollLeft = left;
@@ -338,35 +423,8 @@
 		lastStripWrite = galleryStrip.scrollLeft;
 	}
 
-	function stageFrames() {
-		return orderedPhotographs.map((photo) => photoFrame(galleryStage, photo));
-	}
-
-	function stripThumbnails() {
-		return orderedPhotographs.map((photo) => photoFrame(galleryStrip, photo));
-	}
-
-	function centerOf(rect: DOMRect) {
-		return rect.left + rect.width / 2;
-	}
-
-	// Horizontal centers in viewport coordinates, made non-decreasing so two-row layouts, where
-	// neighbours can overlap, still map in order.
-	function frameCenters(frames: (HTMLElement | null | undefined)[]) {
-		const centers: number[] = [];
-		for (const frame of frames) {
-			if (!frame) return;
-			centers.push(Math.max(centerOf(frame.getBoundingClientRect()), centers.at(-1) ?? -Infinity));
-		}
-		return centers.length ? centers : undefined;
-	}
-
-	function readingPosition(container: HTMLElement, frames: (HTMLElement | null | undefined)[]) {
-		const centers = frameCenters(frames);
-		if (!centers) return;
-		const rect = container.getBoundingClientRect();
-		const range = container.scrollWidth - container.clientWidth;
-		const point = rect.left + rect.width * (range > 0 ? container.scrollLeft / range : 0);
+	function readingPosition({ centers, width, range }: Track, scrollLeft: number) {
+		const point = scrollLeft + width * (range > 0 ? scrollLeft / range : 0);
 		if (point <= centers[0]) return 0;
 		for (let index = 0; index < centers.length - 1; index++) {
 			const span = centers[index + 1] - centers[index];
@@ -377,68 +435,27 @@
 		return centers.length - 1;
 	}
 
-	// The scrollLeft at which the container's reading point lands on `position`. The reading point
-	// sits at width * scrollLeft / range from the left edge, so solving scrollLeft + that offset =
-	// target content x gives scrollLeft = x / (1 + width / range).
-	function scrollForPosition(
-		container: HTMLElement,
-		frames: (HTMLElement | null | undefined)[],
-		position: number
-	) {
-		const centers = frameCenters(frames);
-		const range = container.scrollWidth - container.clientWidth;
-		if (!centers || range <= 0) return;
+	// The scrollLeft at which the reading point lands on `position`. The reading point sits at
+	// width * scrollLeft / range past scrollLeft, so solving scrollLeft + that offset = target x gives
+	// scrollLeft = x / (1 + width / range).
+	function scrollForPosition({ centers, width, range }: Track, position: number) {
+		if (range <= 0) return;
 		const index = Math.floor(position);
 		const before = centers[index];
 		const after = centers[Math.min(index + 1, centers.length - 1)];
-		const rect = container.getBoundingClientRect();
-		const target =
-			container.scrollLeft + before + (after - before) * (position - index) - rect.left;
-		return Math.min(Math.max(target / (1 + container.clientWidth / range), 0), range);
+		const target = before + (after - before) * (position - index);
+		return Math.min(Math.max(target / (1 + width / range), 0), range);
 	}
 
-	// Photographs that pass beneath the hint, left to right. With two rows that is the hint's row
-	// (plus the header photograph spanning both), not the overall photograph order.
-	function hintLane() {
-		if (!galleryStage || !galleryHint) return [];
-		const hintRect = galleryHint.getBoundingClientRect();
-		const y = hintRect.top + hintRect.height / 2;
-		return [...galleryStage.querySelectorAll<HTMLElement>('.photography-gallery-frame')]
-			.map((frame) => frame.getBoundingClientRect())
-			.filter((rect) => rect.top <= y && rect.bottom >= y)
-			.sort((a, b) => a.left - b.left);
-	}
-
-	// Scroll positions bounding the hint's fade: it begins when the second photograph's trailing edge
-	// reaches the hint's leading edge, so the fade plays over the third photograph, and ends once the
-	// third photograph is completely in view (or the stage reaches its end).
-	function hintFadeRange(stageRect: DOMRect) {
-		const [, secondRect, thirdRect] = hintLane();
-		if (!galleryStage || !galleryHint || !secondRect) return;
-		const scrollLeft = galleryStage.scrollLeft;
-		const maxScroll = galleryStage.scrollWidth - galleryStage.clientWidth;
-		const end = Math.min(
-			thirdRect ? scrollLeft + thirdRect.right - stageRect.right : maxScroll,
-			maxScroll
-		);
-		const start = Math.min(
-			scrollLeft + secondRect.right - galleryHint.getBoundingClientRect().left,
-			end
-		);
-		return { start, end };
-	}
-
-	function updateHint(stageRect: DOMRect) {
-		const range = hintFadeRange(stageRect);
-		if (!range || !galleryStage) return;
-		const scrollLeft = galleryStage.scrollLeft;
-		if (scrollLeft >= range.end - 1) {
+	function updateHint(scrollLeft: number) {
+		if (!hintRange) return;
+		if (scrollLeft >= hintRange.end - 1) {
 			hintOpacity = 0;
 			nextPhotoShown = true;
 			return;
 		}
-		const span = range.end - range.start;
-		hintOpacity = span > 0 ? Math.min(Math.max((range.end - scrollLeft) / span, 0), 1) : 1;
+		const span = hintRange.end - hintRange.start;
+		hintOpacity = span > 0 ? Math.min(Math.max((hintRange.end - scrollLeft) / span, 0), 1) : 1;
 	}
 </script>
 
@@ -459,7 +476,7 @@
 			<EmptyState message="No photographs yet." align="center" />
 		{/if}
 		{#if orderedPhotographs.length}
-			<div class="photography-gallery-track">
+			<div bind:this={galleryTrack} class="photography-gallery-track">
 				{#if headerPhotograph}
 					<div class="photography-gallery-cell">
 						<PhotographyTile
@@ -539,6 +556,8 @@
 						height={photograph.height ?? 960}
 						loading="lazy"
 						decoding="async"
+						data-reveal
+						{@attach revealImage(photograph.thumbnailSrc ?? photograph.src)}
 					/>
 				</button>
 			{/each}
@@ -704,7 +723,7 @@
 		display: block;
 		width: auto;
 		height: 100%;
-		aspect-ratio: 3 / 2;
+		aspect-ratio: 1;
 		object-fit: cover;
 	}
 

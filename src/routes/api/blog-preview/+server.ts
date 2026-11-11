@@ -1,4 +1,5 @@
 import { loadPost, postPreviewMarkdown } from '#lib/blog.ts';
+import { mathFor } from '#lib/server/math.ts';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = ({ request, url }) => {
@@ -23,7 +24,7 @@ export const GET: RequestHandler = ({ request, url }) => {
 		return new Response(null, { status: 304, headers });
 	}
 
-	return Response.json({ markdown }, { headers });
+	return Response.json({ markdown, math: mathFor(markdown, post.math) }, { headers });
 };
 
 function previewEtag(markdown: string) {

@@ -1,11 +1,75 @@
-import { marked, type Tokens } from 'marked';
+import { marked, type TokenizerAndRendererExtension, type Tokens } from 'marked';
 import { bundledLanguages, type BundledLanguage } from 'shiki/langs';
 import { slugify } from './text';
 import type { MdBlock, Theme } from './types';
 
+/**
+ * LaTeX math: `$inline$`, `$$display$$` within a paragraph, and `$$` blocks on their own lines.
+ * The server renders each expression with KaTeX (see `server/math.ts`) and sends the HTML with the
+ * post, so KaTeX never ships to the browser; rendering here only looks that HTML up.
+ */
+type MathToken = { type: 'math' | 'mathBlock'; raw: string; text: string; display: boolean };
+
+const MATH_BLOCK = /^\$\$[ \t]*\n?([\s\S]+?)\n?[ \t]*\$\$[ \t]*(?:\n+|$)/;
+const MATH_DISPLAY_INLINE = /^\$\$((?:\\.|[^\\$])+?)\$\$/;
+// Hugs its content and is not followed by a digit, so "$5 and $10" stay text.
+const MATH_INLINE = /^\$(?![\s$])((?:\\.|[^\\$\n])+?)(?<!\s)\$(?!\d)/;
+
+const mathBlockExtension: TokenizerAndRendererExtension = {
+	name: 'mathBlock',
+	level: 'block',
+	start: (src) => src.match(/^\$\$/m)?.index,
+	tokenizer(src): MathToken | undefined {
+		const match = MATH_BLOCK.exec(src);
+		if (match) return { type: 'mathBlock', raw: match[0], text: match[1].trim(), display: true };
+	},
+	renderer: (token) => mathHtml(token.text, true)
+};
+
+const mathInlineExtension: TokenizerAndRendererExtension = {
+	name: 'math',
+	level: 'inline',
+	start: (src) => (src.indexOf('$') >= 0 ? src.indexOf('$') : undefined),
+	tokenizer(src): MathToken | undefined {
+		const display = MATH_DISPLAY_INLINE.exec(src);
+		const match = display ?? MATH_INLINE.exec(src);
+		if (!match) return;
+		return { type: 'math', raw: match[0], text: match[1].trim(), display: !!display };
+	},
+	renderer: (token) => mathHtml(token.text, token.display)
+};
+
 marked.use({
-	breaks: true
+	breaks: true,
+	extensions: [mathBlockExtension, mathInlineExtension]
 });
+
+/** Rendered math for the markdown being parsed, keyed by `mathKey`. Set only during `parseMarkdown`. */
+let renderedMath: Record<string, string> = {};
+
+export function mathKey(tex: string, display: boolean) {
+	return `${display ? 'display' : 'inline'}:${tex}`;
+}
+
+/** Every math expression in the markdown, for the server to render. */
+export function collectMath(tokens: MarkdownTokens) {
+	const expressions = new Map<string, { tex: string; display: boolean }>();
+	marked.walkTokens(tokens, (token) => {
+		if (token.type !== 'math' && token.type !== 'mathBlock') return;
+		const { text, display } = token as unknown as MathToken;
+		expressions.set(mathKey(text, display), { tex: text, display });
+	});
+	return expressions;
+}
+
+// Unrendered math shows its source rather than disappearing. Display math may sit inside a `<p>`, so
+// its wrapper is a span styled as a block.
+function mathHtml(tex: string, display: boolean) {
+	const html = renderedMath[mathKey(tex, display)];
+	if (html) return display ? `<span class="ui-math-display">${html}</span>` : html;
+	const source = escapeHtml(display ? `$$${tex}$$` : `$${tex}$`);
+	return `<code class="ui-math-source">${source}</code>`;
+}
 
 const highlightedCodeCache = new Map<string, string>();
 const highlightedCodePromises = new Map<string, Promise<string>>();
@@ -27,6 +91,20 @@ export function tokenizeMarkdown(markdown: string): MarkdownTokens {
 }
 
 export function parseMarkdown(
+	tokens: MarkdownTokens,
+	highlightedCode: Record<string, string>,
+	math: Record<string, string> = {}
+): MdBlock[] {
+	const previousMath = renderedMath;
+	renderedMath = math;
+	try {
+		return markdownBlocks(tokens, highlightedCode);
+	} finally {
+		renderedMath = previousMath;
+	}
+}
+
+function markdownBlocks(
 	tokens: MarkdownTokens,
 	highlightedCode: Record<string, string>
 ): MdBlock[] {
@@ -79,6 +157,10 @@ export function parseMarkdown(
 		}
 		if (token.type === 'hr') {
 			return [{ type: 'hr' }];
+		}
+		if (token.type === 'mathBlock') {
+			const { text } = token as unknown as MathToken;
+			return [{ type: 'math', html: mathHtml(text, true) }];
 		}
 		return [];
 	});

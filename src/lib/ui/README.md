@@ -27,7 +27,8 @@ Run `bun run dev` and open [`/ui`](http://localhost:5173/ui) for a live gallery 
 - **Interaction.** Pointer cursors, disabled cursors, `touch-action`, and the keyboard focus ring are set once in `tokens.css`, so components do not repeat them or remove outlines. Press feedback is immediate through `:active` with no transition into contact, and hover styles sit behind `@media (hover: hover)`.
 - **Touch.** `--control-*` and `--target-min` grow to 44px below 760px and on coarse pointers, so controls reach their touch size without their own media queries.
 - **Layers.** Dialogs, `Select` lists, and `Lightbox` use the browser top layer. Everything else uses a `--layer-*` token.
-- **Motion.** Components reuse the `--motion-*` and `--ease-*` tokens and the `motion-rise`/`motion-drop` keyframes, and they honor `prefers-reduced-motion`.
+- **Motion.** Components reuse the `--motion-*` and `--ease-*` tokens and the `motion-rise`/`motion-fade`/`motion-drop` keyframes, and they honor `prefers-reduced-motion`.
+- **Images.** Mark large images `<img data-reveal {@attach revealImage(src)} />` so they stay hidden until loaded and decoded, then fade in whole instead of painting in strips. Pass the source so a new one hides the image again.
 - **Styling hooks.** Every component accepts `class`, and most forward other attributes (`aria-*`, `onclick`, and so on) to their root element. Component styles are scoped, so a parent reaches a child root with `:global(.ui-panel.my-class)`.
 - **Links.** Pass internal URLs through `resolve()` from `$app/paths` before handing them to `href` props.
 

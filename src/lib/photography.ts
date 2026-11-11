@@ -21,6 +21,7 @@ export function photographVariants(src: string, width?: number) {
 		(candidate, index) => !width || candidate <= width || index === 0
 	);
 	return {
+		previewSrc: photographVariantSrc(src, PHOTOGRAPH_VARIANT_WIDTHS[0]),
 		thumbnailSrc: photographVariantSrc(src, PHOTOGRAPH_VARIANT_WIDTHS[2]),
 		thumbnailSrcset: widths
 			.map((candidate) => `${photographVariantSrc(src, candidate)} ${candidate}w`)

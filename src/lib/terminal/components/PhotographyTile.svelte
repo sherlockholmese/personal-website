@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { revealImage } from '#lib/ui/index.ts';
 	import type { Photograph } from '../../../content/photography';
 
 	let {
@@ -19,7 +20,8 @@
 	} = $props();
 
 	let failedSource = $state('');
-	let imageFailed = $derived(failedSource === (photograph.thumbnailSrc ?? photograph.src));
+	let source = $derived(photograph.thumbnailSrc ?? photograph.src);
+	let imageFailed = $derived(failedSource === source);
 	// Tiles are sized by height, so their width is the aspect ratio times that height.
 	let aspectRatio = $derived(
 		photograph.width && photograph.height ? photograph.width / photograph.height : 1.5
@@ -44,8 +46,22 @@
 				>Photograph unavailable. Select to try the full-size image.</span
 			>
 		{:else}
+			{#if photograph.previewSrc}
+				<!-- The strip's thumbnail file, so it is usually cached and arrives first. -->
+				<img
+					class="photography-tile-preview"
+					src={photograph.previewSrc}
+					alt=""
+					aria-hidden="true"
+					loading={priority ? 'eager' : 'lazy'}
+					decoding="async"
+					data-reveal
+					{@attach revealImage(photograph.previewSrc)}
+				/>
+			{/if}
 			<img
-				src={photograph.thumbnailSrc ?? photograph.src}
+				class="photography-tile-image"
+				src={source}
 				srcset={photograph.thumbnailSrcset}
 				{sizes}
 				alt={photograph.alt}
@@ -54,8 +70,10 @@
 				loading={priority ? 'eager' : 'lazy'}
 				fetchpriority={priority ? 'high' : 'auto'}
 				decoding="async"
+				data-reveal
+				{@attach revealImage(source)}
 				onerror={() => {
-					failedSource = photograph.thumbnailSrc ?? photograph.src;
+					failedSource = source;
 				}}
 			/>
 		{/if}
@@ -69,7 +87,10 @@
 	}
 
 	.photography-gallery-image {
+		/* Holds the blurred preview inside the frame; the outline is drawn outside and stays visible. */
+		position: relative;
 		display: block;
+		overflow: hidden;
 		width: auto;
 		height: 100%;
 		padding: 0;
@@ -92,11 +113,30 @@
 		opacity: 0.8;
 	}
 
-	.photography-gallery-image img {
+	.photography-tile-image {
+		position: relative;
 		display: block;
 		width: auto;
 		max-width: none;
 		height: 100%;
+	}
+
+	/* Fills the frame behind the photograph; scaled so the blur's soft edge falls outside it. */
+	.photography-tile-preview {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		filter: blur(24px);
+		transform: scale(1.08);
+	}
+
+	/* Stop painting the blur once the photograph has finished fading in over it. */
+	.photography-gallery-image:has(.photography-tile-image:global([data-loaded]))
+		.photography-tile-preview {
+		visibility: hidden;
+		transition: visibility 0s linear var(--motion-slow);
 	}
 
 	.photography-image-error {

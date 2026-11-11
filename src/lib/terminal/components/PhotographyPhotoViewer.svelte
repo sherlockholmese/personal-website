@@ -37,7 +37,10 @@
 </script>
 
 <Lightbox
-	image={photograph && { ...photograph, placeholderSrc: photograph.thumbnailSrc }}
+	image={photograph && {
+		...photograph,
+		placeholderSrc: photograph.previewSrc ?? photograph.thumbnailSrc
+	}}
 	label={photograph ? `Photograph: ${photograph.alt}` : 'Photograph viewer'}
 	closeLabel="Close photograph"
 	errorMessage="Photograph unavailable. Close and reopen it to try again."
@@ -54,7 +57,7 @@
 				{/if}
 			</KeyValueList>
 		{:else if metadataUnavailable}
-			<span>Camera details unavailable.</span>
+			<span class="photo-metadata-unavailable">Camera details unavailable.</span>
 		{/if}
 	{/snippet}
 </Lightbox>
@@ -69,5 +72,13 @@
 		color: var(--text);
 		--ui-kv-columns: auto minmax(0, 1fr);
 		--ui-kv-row-gap: var(--space-2);
+	}
+
+	/* Details arrive after the bar is drawn; they fade into its reserved line rather than pop in. */
+	@media (prefers-reduced-motion: no-preference) {
+		:global(.ui-kv.photo-metadata),
+		.photo-metadata-unavailable {
+			animation: motion-fade var(--motion-normal) var(--ease-standard);
+		}
 	}
 </style>

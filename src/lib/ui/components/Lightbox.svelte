@@ -4,14 +4,16 @@
 	Escape, and the top layer come from the browser. Click the image to zoom; drag or
 	scroll to pan. Setting `image` opens it, clearing `image` closes it, and the last
 	image stays rendered for the exit transition. `image.placeholderSrc` stands in while
-	a large image loads.
+	a large image loads, blurred, and the image appears whole over it once decoded.
 
-	`footer` renders a bar pinned below the image, such as photo metadata.
+	`footer` renders a bar pinned below the image, such as photo metadata. The bar reserves
+	one line from the first frame, so content arriving later does not resize the image.
 -->
 <script lang="ts">
 	import { tick, type Snippet } from 'svelte';
 	import { centerElementPoint, pointRatio } from '#lib/terminal/geometry.ts';
 	import { isMobileViewport } from '#lib/terminal/media.ts';
+	import { revealImage } from '../reveal';
 	import type { LightboxImage } from '../types';
 	import CloseButton from './CloseButton.svelte';
 
@@ -37,15 +39,12 @@
 	let dialog = $state<HTMLDialogElement>();
 	let scroller = $state<HTMLDivElement>();
 	let imageElement = $state<HTMLImageElement>();
-	let footerElement = $state<HTMLDivElement>();
 	let closeButton = $state<HTMLButtonElement>();
-	let footerHeight = $state(0);
 	let zoomed = $state(false);
 	let dragging = $state(false);
 	let dragMoved = false;
 	let dragStart = { x: 0, y: 0, left: 0, top: 0 };
 	let failedSource = $state('');
-	let loadedSource = $state('');
 	let shown = $state<LightboxImage>();
 	let failed = $derived(!!shown && failedSource === shown.src);
 
@@ -60,16 +59,6 @@
 		} else if (dialog?.open) {
 			dialog.close();
 		}
-	});
-
-	$effect(() => {
-		const element = footerElement;
-		if (!element) return;
-		const observer = new ResizeObserver(() => {
-			footerHeight = Math.ceil(element.getBoundingClientRect().height);
-		});
-		observer.observe(element);
-		return () => observer.disconnect();
 	});
 
 	async function show(next: LightboxImage) {
@@ -157,7 +146,7 @@
 	onclick={handleDialogClick}
 >
 	{#if shown}
-		<div class="ui-lightbox-stage" style:--ui-lightbox-footer={`${footerHeight}px`}>
+		<div class="ui-lightbox-stage" class:ui-lightbox-has-footer={!!footer}>
 			<div bind:this={scroller} class="ui-lightbox-scroll ui-scroll">
 				<div class="ui-lightbox-canvas">
 					{#if failed}
@@ -175,25 +164,43 @@
 							onpointerup={handlePointerUp}
 							onpointercancel={handlePointerCancel}
 						>
-							<img
-								bind:this={imageElement}
-								src={shown.src}
-								alt={shown.alt}
-								width={shown.width}
-								height={shown.height}
-								draggable={false}
-								style:background-image={shown.placeholderSrc && loadedSource !== shown.src
-									? `url("${shown.placeholderSrc}")`
-									: undefined}
-								onload={() => (loadedSource = shown?.src ?? '')}
-								onerror={() => (failedSource = shown?.src ?? '')}
-							/>
+							<!-- Fresh elements per image, so the previous image never shows while the next loads. -->
+							{#key shown.src}
+								{#if shown.placeholderSrc}
+									<img
+										class="ui-lightbox-placeholder"
+										src={shown.placeholderSrc}
+										alt=""
+										aria-hidden="true"
+										draggable={false}
+										data-reveal
+										{@attach revealImage(shown.placeholderSrc)}
+									/>
+								{/if}
+								<img
+									bind:this={imageElement}
+									class="ui-lightbox-image"
+									class:ui-lightbox-sized={!!shown.width && !!shown.height}
+									style:--ui-lightbox-width={shown.width ? `${shown.width}px` : undefined}
+									style:--ui-lightbox-ratio={shown.width && shown.height
+										? shown.width / shown.height
+										: undefined}
+									src={shown.src}
+									alt={shown.alt}
+									width={shown.width}
+									height={shown.height}
+									draggable={false}
+									data-reveal
+									{@attach revealImage(shown.src)}
+									onerror={() => (failedSource = shown?.src ?? '')}
+								/>
+							{/key}
 						</button>
 					{/if}
 				</div>
 			</div>
 			{#if footer}
-				<div bind:this={footerElement} class="ui-lightbox-footer">{@render footer()}</div>
+				<div class="ui-lightbox-footer">{@render footer()}</div>
 			{/if}
 			<CloseButton
 				bind:ref={closeButton}
@@ -226,9 +233,18 @@
 	}
 
 	.ui-lightbox-stage {
+		--ui-lightbox-footer: 0px;
 		position: relative;
 		width: 100%;
 		height: 100%;
+	}
+
+	/* One caption line plus the footer's padding and top border, known before any content arrives. */
+	.ui-lightbox-has-footer {
+		--ui-lightbox-footer-end: max(var(--space-3), env(safe-area-inset-bottom));
+		--ui-lightbox-footer: calc(
+			var(--text-caption) * 1.45 + var(--space-3) + var(--ui-lightbox-footer-end) + 1px
+		);
 	}
 
 	.ui-lightbox-scroll {
@@ -248,19 +264,47 @@
 	}
 
 	.ui-lightbox-zoom {
+		position: relative;
+		/* Keeps the placeholder's blur inside the image's box. */
+		overflow: hidden;
 		padding: 0;
 		background: transparent;
 		cursor: zoom-in;
 	}
 
-	.ui-lightbox-zoom img {
+	.ui-lightbox-image {
+		position: relative;
 		display: block;
 		width: auto;
 		height: auto;
 		max-width: calc(100vw - 2 * var(--ui-lightbox-inset));
 		max-height: calc(100dvh - var(--ui-lightbox-footer) - 2 * var(--ui-lightbox-inset));
 		object-fit: contain;
-		background-size: 100% 100%;
+	}
+
+	/* Known dimensions give the image its fitted box before it loads, so the placeholder has room. */
+	.ui-lightbox-sized {
+		width: min(
+			var(--ui-lightbox-width),
+			100vw - 2 * var(--ui-lightbox-inset),
+			(100dvh - var(--ui-lightbox-footer) - 2 * var(--ui-lightbox-inset)) * var(--ui-lightbox-ratio)
+		);
+	}
+
+	/* Covers the image's box until the image fades in over it; scaled so the blur's edge falls outside. */
+	.ui-lightbox-placeholder {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		filter: blur(24px);
+		transform: scale(1.08);
+	}
+
+	.ui-lightbox-zoom:has(.ui-lightbox-image:global([data-loaded])) .ui-lightbox-placeholder {
+		visibility: hidden;
+		transition: visibility 0s linear var(--motion-slow);
 	}
 
 	.ui-lightbox-zoomed {
@@ -272,7 +316,7 @@
 		cursor: grabbing;
 	}
 
-	.ui-lightbox-zoomed img {
+	.ui-lightbox-zoomed .ui-lightbox-image {
 		width: var(--ui-lightbox-zoom-width);
 		max-width: none;
 		max-height: none;
@@ -289,10 +333,12 @@
 		right: 0;
 		bottom: 0;
 		left: 0;
-		padding: var(--space-3) var(--space-4) max(var(--space-3), env(safe-area-inset-bottom));
+		min-height: var(--ui-lightbox-footer);
+		padding: var(--space-3) var(--space-4) var(--ui-lightbox-footer-end);
 		border-top: 1px solid var(--border);
 		background: color-mix(in srgb, var(--surface) 88%, transparent);
 		font-size: var(--text-caption);
+		line-height: 1.45;
 		pointer-events: none;
 	}
 

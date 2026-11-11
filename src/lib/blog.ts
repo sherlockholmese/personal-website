@@ -1,6 +1,7 @@
 import matter from 'gray-matter';
 import type { BlogPost, BlogPostMeta } from '#lib/terminal/types.ts';
 import aboutRaw from '../content/about.md?raw';
+import { renderMath } from '#lib/server/math.ts';
 
 type Frontmatter = {
 	title?: unknown;
@@ -103,7 +104,8 @@ function toPost(filePath: string, raw: string): BlogPost {
 
 	return {
 		...meta,
-		markdown: content.trim()
+		markdown: content.trim(),
+		math: renderMath(content)
 	};
 }
 
