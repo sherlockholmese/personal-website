@@ -31,9 +31,8 @@
 <style>
 	.ui-badge {
 		display: inline-flex;
-		min-height: 22px;
 		align-items: center;
-		padding: 0 var(--space-1);
+		padding: var(--space-half) var(--space-1);
 		border: 1px solid var(--ui-tone);
 		color: var(--ui-tone);
 		font-size: var(--text-caption);
@@ -48,7 +47,6 @@
 	}
 
 	.ui-badge-text {
-		min-height: 0;
 		padding: 0;
 		border: 0;
 		font-size: inherit;

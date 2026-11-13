@@ -270,15 +270,17 @@
 
 	.ui-select-trigger:active:not(:disabled) {
 		background: var(--control-active);
+		color: var(--text);
 	}
 
 	.ui-select-trigger:disabled {
-		opacity: 0.6;
+		opacity: var(--disabled-opacity);
 	}
 
 	@media (hover: hover) {
 		.ui-select-trigger:hover:not(:disabled, :active) {
 			background: var(--control-hover);
+			color: var(--text);
 		}
 	}
 
@@ -294,12 +296,12 @@
 	.ui-select-menu {
 		position: fixed;
 		inset: auto;
-		max-height: 240px;
+		max-height: min(240px, 50dvh);
 		margin: 0;
 		padding: 0;
 		overflow: auto;
 		border: 1px solid var(--border-control);
-		background: var(--surface);
+		background: var(--surface-floating);
 		box-shadow: var(--shadow-floating);
 		color: var(--text);
 		list-style: none;
@@ -323,8 +325,18 @@
 		color: var(--accent);
 	}
 
-	.ui-select-option-active {
+	.ui-select-option-active,
+	.ui-select-option-active[aria-selected='true'] {
 		background: var(--control-hover);
+		color: var(--text);
+	}
+
+	@media (forced-colors: active) {
+		.ui-select-option-active {
+			background: Highlight;
+			color: HighlightText;
+			forced-color-adjust: none;
+		}
 	}
 
 	.ui-select-option[aria-disabled='true'] {

@@ -112,8 +112,9 @@
 		color: var(--accent);
 	}
 
-	.ui-tab:active:not(:disabled) {
+	.ui-tab:active:not(:disabled, [aria-selected='true']) {
 		background: var(--control-active);
+		color: var(--text);
 	}
 
 	.ui-tab[aria-selected='true'] {
@@ -124,11 +125,21 @@
 
 	.ui-tab:disabled {
 		color: var(--text-muted);
+		opacity: var(--disabled-opacity);
+	}
+
+	@media (forced-colors: active) {
+		.ui-tab[aria-selected='true'] {
+			background: Highlight;
+			color: HighlightText;
+			forced-color-adjust: none;
+		}
 	}
 
 	@media (hover: hover) {
 		.ui-tab:hover:not(:disabled, :active, [aria-selected='true']) {
 			background: var(--control-hover);
+			color: var(--text);
 		}
 	}
 

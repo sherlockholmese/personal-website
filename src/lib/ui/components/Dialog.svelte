@@ -103,15 +103,15 @@
 	}
 
 	.ui-dialog-sm {
-		--ui-dialog-width: 420px;
+		--ui-dialog-width: var(--overlay-sm);
 	}
 
 	.ui-dialog-md {
-		--ui-dialog-width: 640px;
+		--ui-dialog-width: var(--overlay-md);
 	}
 
 	.ui-dialog-lg {
-		--ui-dialog-width: 960px;
+		--ui-dialog-width: var(--overlay-lg);
 	}
 
 	.ui-dialog::backdrop {

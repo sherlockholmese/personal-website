@@ -1,6 +1,7 @@
 <!--
 	@component
-	The red bordered `X` used by the terminal titlebar, panels, and overlays.
+	The red bordered `X` used by the terminal titlebar, panels, and overlays. It stays compact on
+	touch and extends its hit area to 44px.
 -->
 <script lang="ts">
 	import type { HTMLButtonAttributes } from 'svelte/elements';
@@ -16,7 +17,13 @@
 	> = $props();
 </script>
 
-<button bind:this={ref} type="button" class={['ui-close', className]} aria-label={label} {...rest}>
+<button
+	bind:this={ref}
+	type="button"
+	class={['ui-close', 'ui-hit-target', className]}
+	aria-label={label}
+	{...rest}
+>
 	X
 </button>
 

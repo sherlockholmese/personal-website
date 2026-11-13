@@ -68,12 +68,22 @@
 		color: var(--info);
 	}
 
-	.completion-option:hover {
-		background: var(--surface-raised);
+	@media (hover: hover) {
+		.completion-option:hover {
+			background: var(--surface-raised);
+		}
 	}
 
 	.completion-option[aria-selected='true'] {
 		background: var(--accent);
 		color: var(--on-accent);
+	}
+
+	@media (forced-colors: active) {
+		.completion-option[aria-selected='true'] {
+			background: Highlight;
+			color: HighlightText;
+			forced-color-adjust: none;
+		}
 	}
 </style>

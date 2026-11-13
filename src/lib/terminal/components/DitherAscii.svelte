@@ -182,7 +182,7 @@
 		user-select: none;
 		mask-image: radial-gradient(
 			circle at left bottom,
-			#000 max(0%, calc(var(--ascii-radius) - 8%)),
+			currentcolor max(0%, calc(var(--ascii-radius) - 8%)),
 			transparent var(--ascii-radius)
 		);
 	}

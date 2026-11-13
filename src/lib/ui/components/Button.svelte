@@ -125,13 +125,15 @@
 		overflow-wrap: anywhere;
 	}
 
+	/* Accent text falls under 4.5:1 on the hover and pressed fills, so those states use body text. */
 	.ui-button:active:not(:disabled) {
 		background: var(--control-active);
+		color: var(--text);
 		transition-duration: 0ms;
 	}
 
 	.ui-button:disabled {
-		opacity: 0.6;
+		opacity: var(--disabled-opacity);
 	}
 
 	.ui-button[aria-busy='true'] {
@@ -147,6 +149,7 @@
 	.ui-button-solid:active:not(:disabled) {
 		border-color: var(--accent-hover);
 		background: var(--accent-hover);
+		color: var(--on-accent);
 	}
 
 	.ui-button-ghost {
@@ -157,7 +160,7 @@
 		background: transparent;
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--link) 65%, transparent);
-		text-underline-offset: 3px;
+		text-underline-offset: var(--underline-offset);
 	}
 
 	.ui-button-ghost:active:not(:disabled) {
@@ -194,11 +197,13 @@
 	@media (hover: hover) {
 		.ui-button:hover:not(:disabled, :active) {
 			background: var(--control-hover);
+			color: var(--text);
 		}
 
 		.ui-button-solid:hover:not(:disabled, :active) {
 			border-color: var(--accent-hover);
 			background: var(--accent-hover);
+			color: var(--on-accent);
 		}
 
 		.ui-button-ghost:hover:not(:disabled, :active) {

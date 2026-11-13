@@ -21,11 +21,13 @@ Run `bun run dev` and open [`/ui`](http://localhost:5173/ui) for a live gallery 
 
 ## Conventions
 
-- **Tokens.** `styles/tokens.css` is the only place raw values live. Components consume semantic roles: `--surface`, `--surface-raised`, `--control-hover`, `--control-active`, `--text`, `--text-muted`, `--accent`, `--accent-hover`, `--on-accent`, `--focus`, `--link`, `--info`, `--success`, `--warning`, `--danger`, the `--border*` family, `--scrim`, and `--shadow-*`, plus the `--space-*`, `--text-*`, `--control-*`, `--motion-*`, and `--layer-*` scales. Every role is defined for dark and light, and text roles meet WCAG AA on both `--surface` and `--surface-raised`.
+- **Tokens.** `styles/tokens.css` is the only place raw values live. Components consume semantic roles: `--surface`, `--surface-raised`, `--surface-floating`, `--control-hover`, `--control-active`, `--text`, `--text-muted`, `--accent`, `--accent-hover`, `--on-accent`, `--focus`, `--link`, `--info`, `--success`, `--warning`, `--danger`, the `--border*` family, `--scrim`, and `--shadow-*`, plus the `--space-*`, `--text-*`, `--control-*`, `--motion-*`, and `--layer-*` scales. Every role is defined for dark and light, and text roles meet WCAG AA on both `--surface` and `--surface-raised`.
 - **Themes.** Tokens sit on `:root` and follow `data-theme`. `Workspace` with `theme` forces a palette for a subtree.
 - **Tones.** Props named `tone` accept `neutral`, `muted`, `accent`, `info`, `success`, `warning`, or `danger`. Green, orange, and red mean status. Heading colors use their own `--heading-*` roles, because they index document depth.
 - **Interaction.** Pointer cursors, disabled cursors, `touch-action`, and the keyboard focus ring are set once in `tokens.css`, so components do not repeat them or remove outlines. Press feedback is immediate through `:active` with no transition into contact, and hover styles sit behind `@media (hover: hover)`.
-- **Touch.** `--control-*` and `--target-min` grow to 44px below 760px and on coarse pointers, so controls reach their touch size without their own media queries.
+- **Touch.** `--control-sm`, `--control-md`, and `--target-min` grow to 44px below 760px and on coarse pointers, so bordered controls reach their touch size without their own media queries. Filled controls (`CloseButton`, `CommandChip`) stay compact and carry `.ui-hit-target`, which extends their hit area to 44px; keep a `--space-3` row gap between wrapped chips so the areas do not overlap.
+- **Contrast.** Accent text drops under 4.5:1 on `--control-hover` and `--control-active`, so hovered and pressed controls switch to `--text`.
+- **Reading.** Running text is left-aligned and capped at `--measure` (75ch). Floating surfaces (`Select` lists, `Notice`) use `--surface-floating` with `--shadow-floating`.
 - **Layers.** Dialogs, `Select` lists, and `Lightbox` use the browser top layer. Everything else uses a `--layer-*` token.
 - **Motion.** Components reuse the `--motion-*` and `--ease-*` tokens and the `motion-rise`/`motion-fade`/`motion-drop` keyframes, and they honor `prefers-reduced-motion`.
 - **Images.** Mark large images `<img data-reveal {@attach revealImage(src)} />` so they stay hidden until loaded and decoded, then fade in whole instead of painting in strips. Pass the source so a new one hides the image again.
@@ -51,7 +53,7 @@ Run `bun run dev` and open [`/ui`](http://localhost:5173/ui) for a live gallery 
 | Component    | Purpose                                                                                      |
 | ------------ | -------------------------------------------------------------------------------------------- |
 | `Heading`    | h1–h6 on the post color ladder, which indexes depth. `size` sets the visual scale.           |
-| `Text`       | Body text with `tone`, `size`, `justify`, `bold`, and `measure`.                             |
+| `Text`       | Left-aligned body text with `tone`, `size`, `bold`, and `measure` (caps lines at 75ch).      |
 | `Prose`      | Applies blog post typography to raw HTML or markdown output. `variant`: `body` or `preview`. |
 | `Link`       | `inline` (blue, underlined) or `plain` (cyan listing link). `external` opens a new tab.      |
 | `InlineCode` | Inline code span.                                                                            |
@@ -72,7 +74,7 @@ Run `bun run dev` and open [`/ui`](http://localhost:5173/ui) for a live gallery 
 | Component     | Purpose                                                                                                                           |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | `Button`      | `outline`, `solid`, `ghost`, `overlay`, `danger`, or `success`; `sm` or `md`; width-stable `loading`; `block`; `<a>` with `href`. |
-| `CloseButton` | Red bordered `X`.                                                                                                                 |
+| `CloseButton` | Red bordered `X`. Stays compact on touch with a 44px hit area.                                                                    |
 | `TextField`   | `inline`, `boxed`, or `bare` input with `label`, `prefix`, `actions`, `hint`, and `error`. Supports `bind:value` and `bind:ref`.  |
 | `Select`      | Keyboard-accessible dropdown with typeahead; its list opens in the top layer. Supports `bind:value`.                              |
 | `Checkbox`    | `[x]` / `[ ]` checkbox backed by a real input. Supports `bind:checked`.                                                           |

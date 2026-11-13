@@ -282,8 +282,10 @@
 		scroll-margin-block: var(--space-3) var(--space-6);
 	}
 
-	.blog-browser-row:hover {
-		background: var(--surface-raised);
+	@media (hover: hover) {
+		.blog-browser-row:hover {
+			background: var(--surface-raised);
+		}
 	}
 
 	.blog-browser-row:active {
@@ -297,6 +299,14 @@
 		color: var(--on-accent);
 	}
 
+	@media (forced-colors: active) {
+		.blog-browser-row-selected {
+			background: Highlight;
+			color: HighlightText;
+			forced-color-adjust: none;
+		}
+	}
+
 	.blog-browser-title,
 	.blog-browser-path {
 		min-width: 0;
@@ -305,15 +315,14 @@
 
 	.blog-browser-date {
 		min-width: 0;
-		opacity: 0.85;
+		font-variant-numeric: tabular-nums;
 	}
 
-	.blog-browser-row :global(.blog-browser-tags) {
-		opacity: 0.8;
-	}
-
-	.blog-browser-path {
-		opacity: 0.7;
+	/* Supporting columns recede through the muted text role; a selected row keeps full contrast. */
+	.blog-browser-row:not(.blog-browser-row-selected) .blog-browser-date,
+	.blog-browser-row:not(.blog-browser-row-selected) .blog-browser-path,
+	.blog-browser-row:not(.blog-browser-row-selected) :global(.blog-browser-tags) {
+		color: var(--text-muted);
 	}
 
 	.blog-browser-scroll-hint {

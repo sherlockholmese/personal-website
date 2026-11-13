@@ -49,10 +49,9 @@
 		color: var(--link-inline);
 		text-decoration: underline;
 		text-decoration-color: color-mix(in srgb, var(--link-inline) 65%, transparent);
-		text-underline-offset: 3px;
+		text-underline-offset: var(--underline-offset);
 	}
 
-	.ui-link-inline:hover,
 	.ui-link-inline:focus-visible {
 		color: var(--link);
 		text-decoration-color: var(--link);
@@ -63,13 +62,18 @@
 		text-decoration: none;
 	}
 
-	.ui-link-plain:hover,
 	.ui-link-plain:focus-visible {
 		color: var(--accent);
 	}
 
-	.ui-link:focus-visible {
-		outline: 2px solid var(--text);
-		outline-offset: 2px;
+	@media (hover: hover) {
+		.ui-link-inline:hover {
+			color: var(--link);
+			text-decoration-color: var(--link);
+		}
+
+		.ui-link-plain:hover {
+			color: var(--accent);
+		}
 	}
 </style>

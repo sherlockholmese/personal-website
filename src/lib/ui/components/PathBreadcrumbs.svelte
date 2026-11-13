@@ -62,7 +62,7 @@
 	ol {
 		display: flex;
 		flex-wrap: wrap;
-		align-items: baseline;
+		align-items: center;
 		margin: 0;
 		padding: 0;
 		color: var(--info);
@@ -73,6 +73,7 @@
 	li {
 		display: inline-flex;
 		min-width: 0;
+		align-items: center;
 	}
 
 	.ui-breadcrumbs-sep {
@@ -91,11 +92,18 @@
 		text-decoration: none;
 	}
 
-	a:hover,
-	button:hover {
+	@media (hover: hover) {
+		a:hover,
+		button:hover {
+			color: var(--accent);
+			text-decoration: underline;
+			text-underline-offset: var(--underline-offset);
+		}
+	}
+
+	a:active,
+	button:active {
 		color: var(--accent);
-		text-decoration: underline;
-		text-underline-offset: 3px;
 	}
 
 	.ui-breadcrumbs-current {

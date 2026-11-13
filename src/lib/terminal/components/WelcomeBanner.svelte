@@ -39,7 +39,7 @@
 			<KeyValueRow label="stack">
 				C/C++, Rust, HTML + JavaScript/TypeScript + CSS, Python, Godot Engine
 			</KeyValueRow>
-			<KeyValueRow label="try">
+			<KeyValueRow label="try" class="welcome-try">
 				<span class="welcome-commands">
 					{#each helpfulCommands as command (command)}
 						<CommandChip {command} onRun={onCommand} />
@@ -107,7 +107,7 @@
 	.welcome-commands {
 		display: flex;
 		flex-wrap: wrap;
-		gap: var(--space-2);
+		gap: var(--space-3) var(--space-2);
 	}
 
 	.welcome-content :global(.welcome-latest) {
@@ -125,6 +125,11 @@
 		.welcome-avatar {
 			max-width: 160px;
 			aspect-ratio: 1;
+		}
+
+		/* The command dock lists the same commands within thumb reach. */
+		.welcome-content :global(.welcome-try) {
+			display: none;
 		}
 	}
 </style>

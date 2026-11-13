@@ -133,7 +133,7 @@ export function greet(name: string) {
 	<Heading level={2}>Heading 2</Heading>
 	<Heading level={3}>Heading 3</Heading>
 	<Heading level={4}>Heading 4</Heading>
-	<Text justify measure>
+	<Text measure>
 		Body text keeps the terminal reading rhythm. Use <InlineCode>InlineCode</InlineCode> for identifiers,
 		<Kbd>tab</Kbd> for keys, and <Link href="https://svelte.dev" external>links</Link>
 		for references.
@@ -160,7 +160,7 @@ export function greet(name: string) {
 	<OutputLine kind="success" text="build succeeded" />
 	<OutputLine kind="warning" text="deprecated flag" />
 	<OutputLine kind="error" text="command not found: foo" />
-	<div class="my-[10px] flex flex-wrap gap-[6px]">
+	<div class="my-[12px] flex flex-wrap gap-x-[8px] gap-y-[12px]">
 		{#each ['help', 'blog', 'photos'] as command (command)}
 			<CommandChip {command} onRun={(value) => (lastCommand = value)} />
 		{/each}
@@ -183,7 +183,7 @@ export function greet(name: string) {
 		<Button disabled>disabled</Button>
 		<Button href={resolve('/')}>link</Button>
 	</div>
-	<div class="my-[12px] grid max-w-[60ch] gap-[10px]">
+	<div class="my-[12px] grid max-w-[60ch] gap-[12px]">
 		<TextField label="query" prefix="❯" placeholder="type to filter" bind:value={query} />
 		<TextField
 			label="email"
@@ -248,7 +248,7 @@ export function greet(name: string) {
 		title="socials"
 		items={[{ label: 'github', href: 'https://github.com/sherlockholmestech', external: true }]}
 	/>
-	<div class="my-[10px] flex flex-wrap gap-[8px]">
+	<div class="my-[12px] flex flex-wrap gap-[8px]">
 		{#each tones as tone (tone)}
 			<Badge {tone}>{tone}</Badge>
 		{/each}
@@ -269,7 +269,7 @@ export function greet(name: string) {
 		{/snippet}
 	</Callout>
 	<EmptyState title="no posts" message="nothing matches that query." />
-	<div class="my-[10px] grid gap-[8px]">
+	<div class="my-[12px] grid gap-[8px]">
 		<Spinner label="fetching photographs" />
 		<ProgressBar label="upload" value={progress} />
 		<div class="flex gap-[8px]">

@@ -64,14 +64,15 @@
 		bottom: max(var(--ui-notice-inset), env(safe-area-inset-bottom));
 		z-index: var(--layer-notice);
 		display: flex;
-		width: min(420px, calc(100% - 2 * var(--ui-notice-inset)));
+		width: min(var(--overlay-sm), calc(100% - 2 * var(--ui-notice-inset)));
 		max-height: calc(100dvh - 2 * var(--ui-notice-inset));
 		flex-direction: column;
 		gap: var(--space-2);
 		padding: var(--ui-notice-inset);
 		border: 1px solid var(--border);
 		border-radius: var(--radius-frame);
-		background: var(--surface-raised);
+		background: var(--surface-floating);
+		box-shadow: var(--shadow-floating);
 		color: var(--text);
 		font-size: var(--text-caption);
 		line-height: 1.5;
@@ -102,7 +103,7 @@
 	}
 
 	.ui-notice-content :global(p) {
-		max-width: 75ch;
+		max-width: var(--measure);
 		margin: 0;
 	}
 
