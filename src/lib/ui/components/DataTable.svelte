@@ -141,8 +141,10 @@
 		inset: 0;
 	}
 
-	.ui-table-linked tbody tr:hover td:first-child {
-		color: var(--accent);
+	@media (hover: hover) {
+		.ui-table-linked tbody tr:hover td:first-child {
+			color: var(--accent);
+		}
 	}
 
 	.ui-table-link:focus-visible {

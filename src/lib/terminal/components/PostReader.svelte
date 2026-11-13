@@ -299,7 +299,7 @@
 			<header class="post-header">
 				<Heading level={1} id="post-top" data-heading-id="post-top">{post.title}</Heading>
 				{#if post.description}
-					<Text class="post-description" tone="muted" justify>{post.description}</Text>
+					<Text class="post-description" tone="muted">{post.description}</Text>
 				{/if}
 				<KeyValueList class="post-meta" muted>
 					<KeyValueRow label="date">{formatPostDate(post.date)}</KeyValueRow>
@@ -365,14 +365,17 @@
 	/*
 	 * A rail in the left margin, centered vertically in the reader. Sections are told apart by
 	 * indent and tone in one type size; a continuous guide line marks the current one in accent.
-	 * The rail's font size matches the article's, so its `ch` offsets line up with the 86ch column.
+	 * The rail's font size matches the article's, so its `ch` offsets line up with the text column.
 	 */
 	.post-toc {
 		--post-toc-width: 240px;
 		--post-toc-gap: var(--space-8);
 		position: absolute;
 		top: 50%;
-		left: max(var(--space-4), calc(50% - 43ch - var(--post-toc-gap) - var(--post-toc-width)));
+		left: max(
+			var(--space-4),
+			calc(50% - var(--measure) / 2 - var(--post-toc-gap) - var(--post-toc-width))
+		);
 		z-index: var(--layer-raised);
 		width: var(--post-toc-width);
 		max-height: calc(100% - 2 * var(--space-4));
@@ -458,7 +461,7 @@
 		.post-toc-dock {
 			position: relative;
 			display: block;
-			max-width: calc(86ch - 2 * var(--content-inline-padding));
+			max-width: var(--measure);
 			margin-inline: auto;
 		}
 
@@ -481,7 +484,7 @@
 			padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
 			border: 1px solid var(--border-control);
 			border-bottom: 0;
-			background: var(--surface);
+			background: var(--surface-floating);
 			box-shadow: var(--shadow-floating);
 			transform: none;
 		}
@@ -516,10 +519,10 @@
 	.post-content {
 		width: 100%;
 		min-width: 0;
-		max-width: 86ch;
+		max-width: calc(var(--measure) + 2 * var(--content-inline-padding));
 		margin-inline: auto;
 		padding-inline: var(--content-inline-padding);
-		padding-bottom: 56px;
+		padding-bottom: var(--space-8);
 		font-size: var(--text-reading);
 	}
 
@@ -528,7 +531,6 @@
 	}
 
 	.post-header :global(.post-description) {
-		max-width: 80ch;
 		font-size: inherit;
 	}
 

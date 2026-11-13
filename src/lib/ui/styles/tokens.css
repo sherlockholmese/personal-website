@@ -22,18 +22,32 @@
 		--text-body: 15px;
 		--text-reading: 16px;
 		--text-title: 19px;
+		/* Top-level sections inside a document, one step under its title. */
+		--text-section: 24px;
 		--text-display: 32px;
+
+		/* Longest comfortable line of running text. */
+		--measure: 75ch;
+		--overlay-sm: 420px;
+		--overlay-md: 640px;
+		--overlay-lg: 960px;
 
 		--radius-frame: 5px;
 		--border-frame: 2px;
 		--focus-width: 2px;
 		--focus-offset: 2px;
+		--underline-offset: 3px;
+		--disabled-opacity: 0.6;
 
 		--control-chip: 22px;
 		--control-sm: 28px;
 		--control-md: 32px;
 		--control-close: 24px;
-		/* Minimum block size for list rows and text-sized targets. */
+		/*
+		 * Minimum block size for list rows and text-sized targets. Bordered controls grow to it on
+		 * touch; filled ones (the close button, command chips) stay compact and extend their hit
+		 * area to it instead, so they do not turn into slabs of color.
+		 */
 		--target-min: 0px;
 
 		--motion-press: 90ms;
@@ -55,10 +69,10 @@
 
 	@media (max-width: 760px), (pointer: coarse) {
 		:root {
-			--control-chip: 44px;
+			--control-chip: 32px;
 			--control-sm: 44px;
 			--control-md: 44px;
-			--control-close: 44px;
+			--control-close: 32px;
 			--target-min: 44px;
 		}
 	}
@@ -70,6 +84,7 @@
 			--text-body: 16px;
 			--text-reading: clamp(16px, 4vw, 18px);
 			--text-title: clamp(18px, 5vw, 22px);
+			--text-section: clamp(20px, 5.6vw, 24px);
 			--text-display: clamp(24px, 7vw, 30px);
 		}
 	}
@@ -79,6 +94,7 @@
 		color-scheme: dark;
 		--surface: #100f0f;
 		--surface-raised: #1c1b1a;
+		--surface-floating: #1c1b1a;
 		--control-hover: #343331;
 		--control-active: #403e3c;
 		--text: #cecdc3;
@@ -108,6 +124,7 @@
 		color-scheme: light;
 		--surface: #fffcf0;
 		--surface-raised: #f2f0e5;
+		--surface-floating: #f2f0e5;
 		--control-hover: #dad8ce;
 		--control-active: #cecdc3;
 		--text: #100f0f;
@@ -186,6 +203,10 @@
 		label:has(input),
 		[role='button'],
 		[role='option'],
+		[role='menuitem'],
+		[role='checkbox'],
+		[role='radio'],
+		[role='switch'],
 		[role='tab'],
 		[role='combobox']
 	) {
@@ -193,7 +214,7 @@
 		touch-action: manipulation;
 	}
 
-	:where(:disabled, [aria-disabled='true']) {
+	:where(:disabled, [aria-disabled='true'], label:has(:disabled)) {
 		cursor: not-allowed;
 	}
 
@@ -214,6 +235,20 @@
 		overflow: hidden;
 		clip-path: inset(50%);
 		white-space: nowrap;
+	}
+
+	/*
+	 * Extends a compact control's hit area to the touch minimum without growing what is drawn.
+	 * Keep neighbours far enough apart that the extensions do not overlap.
+	 */
+	.ui-hit-target {
+		position: relative;
+	}
+
+	.ui-hit-target::after {
+		position: absolute;
+		inset: min(0px, calc((100% - var(--target-min)) / 2));
+		content: '';
 	}
 
 	/* Images using `revealImage` appear whole once decoded instead of painting in strips. */

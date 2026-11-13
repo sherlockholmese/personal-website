@@ -97,9 +97,15 @@
 		align-items: center;
 	}
 
-	a.ui-link-list-row:hover,
-	a.ui-link-list-row:focus-visible {
+	a.ui-link-list-row:focus-visible,
+	a.ui-link-list-row:active {
 		color: var(--accent);
+	}
+
+	@media (hover: hover) {
+		a.ui-link-list-row:hover {
+			color: var(--accent);
+		}
 	}
 
 	.ui-link-list-value {

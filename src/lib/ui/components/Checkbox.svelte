@@ -78,7 +78,7 @@
 	}
 
 	@media (hover: hover) {
-		.ui-checkbox:hover .ui-checkbox-box {
+		.ui-checkbox:not(.ui-checkbox-disabled):hover .ui-checkbox-box {
 			color: var(--accent-hover);
 		}
 	}
@@ -89,8 +89,7 @@
 	}
 
 	.ui-checkbox-disabled {
-		cursor: not-allowed;
-		opacity: 0.6;
+		opacity: var(--disabled-opacity);
 	}
 
 	@media (max-width: 760px), (pointer: coarse) {

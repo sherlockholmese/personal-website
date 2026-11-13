@@ -2,6 +2,7 @@
 	@component
 	Filled accent chip naming a terminal command, as in the welcome banner's `try` row.
 	Renders a button when `onRun` is set, otherwise a link to `href` (already resolved).
+	On touch the chip extends its hit area to 44px; give wrapping rows a `--space-3` row gap.
 -->
 <script lang="ts">
 	let {
@@ -23,7 +24,7 @@
 {#if onRun || !href}
 	<button
 		type="button"
-		class={['ui-command-chip', className]}
+		class={['ui-command-chip', 'ui-hit-target', className]}
 		aria-label={`run ${command}`}
 		onclick={() => onRun?.(command)}
 	>
@@ -31,7 +32,7 @@
 	</button>
 {:else}
 	<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-	<a {href} class={['ui-command-chip', className]}>{label ?? command}</a>
+	<a {href} class={['ui-command-chip', 'ui-hit-target', className]}>{label ?? command}</a>
 {/if}
 
 <style>

@@ -46,7 +46,7 @@
 	.ui-callout {
 		display: grid;
 		gap: var(--space-2);
-		max-width: 86ch;
+		max-width: calc(var(--measure) + 2 * var(--space-3));
 		margin-block: var(--space-2);
 		padding: var(--space-3);
 		border-left: var(--border-frame) solid var(--ui-tone);
@@ -69,7 +69,6 @@
 	.ui-callout-body {
 		display: grid;
 		gap: var(--space-2);
-		max-width: 68ch;
 		color: var(--text-muted);
 		font-size: var(--text-body);
 		line-height: 1.45;
@@ -82,6 +81,7 @@
 	.ui-callout-actions {
 		display: flex;
 		flex-wrap: wrap;
-		gap: var(--space-2);
+		/* The row gap keeps the extended hit areas of wrapped chips apart. */
+		gap: var(--space-3) var(--space-2);
 	}
 </style>
