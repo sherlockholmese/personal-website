@@ -41,10 +41,9 @@
 		margin: 0;
 	}
 
-	/* Running text is set ragged-right: justified monospace opens rivers on narrow screens. */
-	.ui-prose p,
-	.ui-prose blockquote,
-	.ui-prose li {
+	.ui-prose :where(p, blockquote, li):not(:where(.not-prose, .not-prose *)) {
+		text-align: justify;
+		text-justify: inter-word;
 		hyphens: none;
 		overflow-wrap: break-word;
 	}
